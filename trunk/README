@@ -1,0 +1,19 @@
+libcaldav Version 0.1.0
+
+These are the feature so far
+  - Support for VEVENT
+     - Add. Add a new event to the collection
+	 - Get. Get one or more events from the collection
+	 - Getall. Get all events from the collection
+	 - Modify. Modify an event
+	 - Delete. Delete an event
+	 - GetCalName. Get the display name from the collection
+	 - IsCalDAV. Test wether a given URL represents a CalDAV collection
+
+See INSTALL for further information.
+
+For an overview of the current status and future feature implementation
+study the TODO file.
+
+Happy Hacking
+Michael Rasmussen (mir@datanom.net)
