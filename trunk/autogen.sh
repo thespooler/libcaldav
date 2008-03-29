@@ -1,8 +1,16 @@
 #!/bin/sh
 
-AUTORECONF=$(which autoreconf)
+echo "Rebuilding build system......"
 
-function error {
+autoreconf > /dev/null 2>&1
+
+if [ $? -eq 0 ]; then
+	AUTORECONF=autoreconf
+else
+	AUTORECONF=
+fi
+
+error() {
 	echo "Missing tool: $1"
 	echo "Cannot proceed until the missing tool is available"
 	exit 1
@@ -14,11 +22,11 @@ if [ ! -z ${AUTORECONF} ]; then
 	./configure $*
 else
 	echo "No autoreconf found. Using plain old tools to rebuild build system"
-	autoconf --force || error autoconf
-	autoheader --force || error autoheader
-	aclocal -I m4|| error aclocal
-	automake --add-missing --force-missing --gnu || error automake
 	libtoolize --automake --force || error libtoolize
+	aclocal -I m4|| error aclocal
+	autoheader --force || error autoheader
+	automake --add-missing --force-missing --gnu || error automake
+	autoconf --force || error autoconf
 	./configure $*
 fi
 
