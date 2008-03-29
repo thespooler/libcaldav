@@ -1,0 +1,18 @@
+In the nearest future:
+
+	- In the present state there are no support for locking so users
+	should be adviced that multiple access to the same calendar is not
+	fully functional at the moment.
+		- This will be implemented in the nextrelease.
+
+	- Searching free/busy information is lacking.
+		- This will be implemented in the next release.
+
+	- Displaying capabilities.
+		- This will be implemented in the next release.
+
+Something to come at a later time:
+
+	- Implement ToDo support
+	- Implement Journal support 
+

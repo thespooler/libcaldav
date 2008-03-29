@@ -1,0 +1,14 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+pkglibdir=${libdir}/libcaldav
+pkgincludedir=${includedir}/libcaldav-0.1.0
+
+Name: libcaldav
+Description: libcaldav is a client library for CalDAV
+Version: 0.1.0
+
+Cflags: -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include    
+Libs: -lglib-2.0   -lcurl -lgssapi_krb5  

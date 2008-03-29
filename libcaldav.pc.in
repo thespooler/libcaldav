@@ -1,0 +1,14 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+pkglibdir=${libdir}/@PACKAGE@
+pkgincludedir=${includedir}/@PACKAGE@-@VERSION@
+
+Name: libcaldav
+Description: libcaldav is a client library for CalDAV
+Version: @VERSION@
+
+Cflags: @GLIB_CFLAGS@ @CURL_CFLAGS@
+Libs: @GLIB_LIBS@ @CURL_LIBS@
