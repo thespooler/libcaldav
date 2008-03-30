@@ -28,6 +28,7 @@
 #include "delete-caldav-object.h"
 #include "modify-caldav-object.h"
 #include "get-display-name.h"
+#include "options-caldav-server.h"
 #include <curl/curl.h>
 #include <glib.h>
 #include <stdio.h>
@@ -47,59 +48,9 @@ static caldav_error* error;
  * resource. TRUE if the URL does reference a CalDAV calendar resource.
  */
 static gboolean test_caldav_enabled(CURL* curl, gchar* url) {
-	CURLcode res = 0;
-	char error_buf[CURL_ERROR_SIZE + 1];
-	struct MemoryStruct chunk;
-	struct MemoryStruct headers;
-	gboolean enabled = FALSE;
-
-	if (!error) {
-		error = (caldav_error *) malloc(sizeof(struct _caldav_error));
-		memset(error, '\0', sizeof(struct _caldav_error));
-	}
-	chunk.memory = NULL; /* we expect realloc(NULL, size) to work */
-	chunk.size = 0;    /* no data at this point */
-	headers.memory = NULL;
-	headers.size = 0;
-	/* send all data to this function  */
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-	/* we pass our 'chunk' struct to the callback function */
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
-	/* send all data to this function  */
-	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, WriteHeaderCallback);
-	/* we pass our 'chunk' struct to the callback function */
-	curl_easy_setopt(curl, CURLOPT_WRITEHEADER, (void *)&headers);
-	/* some servers don't like requests that are made without a user-agent
-	 * field, so we provide one */
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/0.1");
-	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, &error_buf);
-	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "OPTIONS");
-	curl_easy_setopt(curl, CURLOPT_URL, url);
-	res = curl_easy_perform(curl);
-	if (res == 0) {
-		gchar* head;
-		head = get_response_header("DAV", headers.memory);
-		if (head && strstr(head, "calendar-access") != NULL) {
-			enabled = TRUE;
-			g_free(error);
-		}
-		else {
-			long code;
-			res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
-			error->code = code;
-			error->str = g_strdup(headers.memory);
-		}
-	}
-	else {
-		error->code = -1;
-		error->str = g_strdup("URL is not a CalDAV resource");
-	}
-	if (chunk.memory)
-		free(chunk.memory);
-	if (headers.memory)
-		free(headers.memory);
-	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
-	return enabled;
+	error = (caldav_error *) malloc(sizeof(struct _caldav_error));
+	memset(error, '\0', sizeof(struct _caldav_error));
+	return caldav_getoptions(curl, url, NULL, error, TRUE);
 }
 
 /* 
@@ -458,6 +409,7 @@ caldav_error* caldav_get_error(caldav_error* lib_error) {
 	lib_error->code = error->code;
 	if (error->str) {
 		lib_error->str = (char *) malloc(strlen(error->str) + 1);
+		memset(lib_error->str, '\0', strlen(error->str) + 1);
 		memcpy(lib_error->str, error->str, strlen(error->str));
 	}
 	/*free_static_caldav_error();*/
@@ -475,4 +427,58 @@ void caldav_free_error(caldav_error* lib_error) {
 		free(lib_error->str);
 	free(lib_error);
 	lib_error = NULL;
+}
+
+/**
+ * Function to call to get a list of supported CalDAV options for a server
+ * @param URL Defines CalDAV resource. Receiver is responsible for
+ * freeing the memory. [http://][username[:password]@]host[:port]/url-path.
+ * See (RFC1738).
+ * @result A list of available options or NULL in case of any error.
+ */
+char** caldav_get_server_options(const char* URL) {
+	CURL* curl;
+	caldav_settings settings;
+	response server_options;
+	struct config_data data;
+	gboolean res = FALSE;
+
+	error = (caldav_error *) malloc(sizeof(struct _caldav_error));
+	memset(error, '\0', sizeof(struct _caldav_error));
+	init_caldav_settings(&settings);
+	if (options.trace_ascii)
+		data.trace_ascii = 1;
+	else
+		data.trace_ascii = 0;
+	parse_url(&settings, URL);
+	curl = curl_easy_init();
+	if (!curl) {
+		settings.file = NULL;
+		return NULL;
+	}
+	if (options.debug) {
+		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
+		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
+		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+	}
+	if (settings.username) {
+		gchar* userpwd = NULL;
+		if (settings.password)
+			userpwd = g_strdup_printf("%s:%s",
+				settings.username, settings.password);
+		else
+			userpwd = g_strdup_printf("%s",	settings.username);
+		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
+		g_free(userpwd);
+	}
+	res = caldav_getoptions(curl, settings.url, &server_options, error, FALSE);
+	free_caldav_settings(&settings);
+	curl_easy_cleanup(curl);
+	gchar** options = g_strsplit(server_options.msg, ", ", 0);
+	gchar** tmp = options;
+	while (*tmp) {
+		*tmp = g_strchug(*tmp);
+		*tmp++ = g_strchomp(*tmp);
+	}
+	return (options) ? options : NULL;
 }

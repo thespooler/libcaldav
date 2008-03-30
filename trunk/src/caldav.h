@@ -115,7 +115,8 @@ typedef enum {
 	GET,
 	GETALL,
 	GETCALNAME,
-	ISCALDAV
+	ISCALDAV,
+	OPTIONS
 } CALDAV_ACTION;
 
 /**
@@ -237,5 +238,14 @@ void caldav_free_error(caldav_error* lib_error);
  * @param curl_options A struct debug_curl. See debug_curl.
  */
 void caldav_set_options(struct debug_curl curl_options);
+
+/**
+ * Function to call to get a list of supported CalDAV options for a server
+ * @param URL Defines CalDAV resource. Receiver is responsible for
+ * freeing the memory. [http://][username[:password]@]host[:port]/url-path.
+ * See (RFC1738).
+ * @result A list of available options or NULL in case of any error.
+ */
+char** caldav_get_server_options(const char* URL);
 
 #endif

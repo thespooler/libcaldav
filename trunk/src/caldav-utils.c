@@ -288,15 +288,19 @@ void parse_url(caldav_settings* settings, const char* url) {
  * Find a specific HTTP header from last request
  * @param header HTTP header to search for
  * @param headers String of HTTP headers from last request
+ * @param lowcase Should string be returned in all lower case.
  * @return The header found or NULL
  */
 #define MAX_TOKENS 2
-gchar* get_response_header(const char* header, gchar* headers) {
+gchar* get_response_header(
+		const char* header, gchar* headers, gboolean lowcase) {
 	gchar* line;
 	gchar* head = NULL;
 	gchar** buf;
+	gchar* header_list;
 
-	line = strtok(headers, "\r\n");
+	header_list = g_strdup(headers);
+	line = strtok(header_list, "\r\n");
 	if (line != NULL) {
 		do  {
 			buf = g_strsplit(line, ":", MAX_TOKENS);
@@ -311,7 +315,7 @@ gchar* get_response_header(const char* header, gchar* headers) {
 		} while ((line = strtok(NULL, "\r\n")) != NULL);
 	}
 	if (head)
-		return g_ascii_strdown(head, -1);
+		return (lowcase) ? g_ascii_strdown(head, -1) : head;
 	else
 		return NULL;
 }
@@ -321,7 +325,7 @@ gchar* get_response_header(const char* header, gchar* headers) {
  * @param object String
  * @return String
  */
-static gchar* chomp_head_newline(gchar* object) {
+gchar* chomp_head_newline(gchar* object) {
 	while (object[0] == '\r' || object[0] == '\n')
 		object = &(*(object + 1));
 	return object;
@@ -332,7 +336,7 @@ static gchar* chomp_head_newline(gchar* object) {
  * @param object String
  * @return String
  */
-static gchar* chomp_tail_newline(gchar* object) {
+gchar* chomp_tail_newline(gchar* object) {
 	int i;
 
 	for(i = strlen(object) - 1; object[i] == '\r' || object[i] == '\n'; i--)
@@ -498,7 +502,7 @@ gchar* verify_uid(gchar* object) {
 	gchar* pos;
 
 	newobj = g_strdup(object);
-	uid = get_response_header("uid", object);
+	uid = get_response_header("uid", object, TRUE);
 	if (!uid) {
 		object = g_strdup(newobj);
 		g_free(newobj);

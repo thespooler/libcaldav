@@ -119,7 +119,7 @@ gboolean caldav_modify(caldav_settings* settings, caldav_error* error) {
 	}
 	curl_easy_setopt(curl, CURLOPT_URL, settings->url);
 	gchar* file = g_strdup(settings->file);
-	if ((uid = get_response_header("uid", file)) == NULL) {
+	if ((uid = get_response_header("uid", file, TRUE)) == NULL) {
 		g_free(file);
 		error->code = 1;
 		error->str = g_strdup("Error: Missing required UID for object");

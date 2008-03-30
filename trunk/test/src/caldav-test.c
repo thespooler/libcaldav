@@ -83,7 +83,7 @@ static char* usage[] = 	{
 "the Free Software Foundation; either version 3 of the License, or\n"
 "(at your option) any later version.\n"
 "\nusage:\n\tcaldav-test [Options] URL\n"
-"\n\tOptions:\n\t\t-a\taction [is-caldav|add|delete|modify|get|get-all|displayname]\n"
+"\n\tOptions:\n\t\t-a\taction [is-caldav|add|delete|modify|get|get-all|displayname|options]\n"
 "\t\t-d\tdebug (show request/response)\n"
 "\t\t-e\tend [yyyy/mm/dd]\n"
 "\t\t-f\tfile. Alternative is to use IO redirection (<)\n"
@@ -105,6 +105,7 @@ int main(int argc, char **argv) {
 	response result;
 	CALDAV_RESPONSE res = UNKNOWN;
 	gchar* input = NULL;
+	char** options = NULL;
 
 	while ((c = getopt(argc, argv, "a:de:f:hp:s:u:?")) != -1) {
 		switch (c) {
@@ -133,6 +134,9 @@ int main(int argc, char **argv) {
 				}
 				else if (strcmp("is-caldav", optarg) == 0) {
 					ACTION = ISCALDAV;
+				}
+				else if (strcmp("options", optarg) == 0) {
+					ACTION = OPTIONS;
 				}
 				else {
 					fprintf(stderr, "Unknown action: %s\n", optarg);
@@ -180,7 +184,8 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "%s", usage[0]);
 		return 1;
 	}
-	if (ACTION != GETALL && ACTION != GET && ACTION != GETCALNAME && ACTION != ISCALDAV) {
+	if (ACTION != GETALL && ACTION != GET && ACTION != GETCALNAME &&
+			ACTION != ISCALDAV && ACTION != OPTIONS) {
 		struct stat sb;
 		if (fstat(fileno(stdin), &sb) == -1) {
 			if (!stream) {
@@ -232,6 +237,13 @@ int main(int argc, char **argv) {
 					else
 						res = FORBIDDEN;
 					break;
+		case OPTIONS:
+					options = caldav_get_server_options(url);
+					if (options)
+						res = OK;
+					else
+						res = FORBIDDEN;
+					break;
 		default: break;
 	}
 	if (res != OK) {
@@ -241,7 +253,7 @@ int main(int argc, char **argv) {
 		caldav_free_error(error);
 		return 1;
 	}
-	if (result.msg) {
+	if (result.msg && ACTION != OPTIONS) {
 		fprintf(stdout, "%s", result.msg);
 		gchar* endline = strrchr(result.msg, '\n');
 		if (endline) {
@@ -250,6 +262,13 @@ int main(int argc, char **argv) {
 		}
 		else
 			fprintf(stdout, "\n");
+	}
+	else {
+		char** tmp = options;
+		while (*options) {
+			fprintf(stdout, "%s\n", *options++);
+		}
+		g_strfreev(tmp);
 	}
 	fprintf(stdout, "OK\n");
 	return 0;
