@@ -5,7 +5,7 @@ INCLUDES = @CURL_CFLAGS@ @GLIB_CFLAGS@ \
 
 #noinst_LTLIBRARIES = libcaldav.la
 
-# Uncomment and comment out above to use outside vcalendar plugin
+#Uncomment above and comment out belowe to use inside vcalendar plugin
 lib_LTLIBRARIES = libcaldav.la
 
 libcaldav_la_LDFLAGS = -version-info @LIBVERSION@
@@ -26,7 +26,9 @@ libcaldav_la_SOURCES = \
 		      caldav-utils.c \
 		      caldav-utils.h \
 			  md5.c \
-			  md5.h
+			  md5.h \
+			  options-caldav-server.c \
+			  options-caldav-server.h
 
 libcaldav_includedir=$(includedir)/libcaldav-@VERSION@
 libcaldav_include_HEADERS = caldav.h

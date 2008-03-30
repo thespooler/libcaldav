@@ -134,9 +134,11 @@ void parse_url(caldav_settings* settings, const char* url);
  * Find a specific HTTP header from last request
  * @param header HTTP header to search for
  * @param headers String of HTTP headers from last request
+ * @param lowcase Should string be returned in all lower case.
  * @return The header found or NULL
  */
-gchar* get_response_header(const char* header, gchar* headers);
+gchar* get_response_header(
+		const char* header, gchar* headers, gboolean lowcase);
 
 /**
  * Parse response from CalDAV server
@@ -195,5 +197,19 @@ gchar* get_etag(gchar* text);
  * @return element
  */
 gchar* get_tag(const gchar* tag, gchar* text);
+
+/**
+ * Removes newlines from beginning of string.
+ * @param object String
+ * @return String
+ */
+gchar* chomp_head_newline(gchar* object);
+
+/**
+ * Removes trailing newlines.
+ * @param object String
+ * @return String
+ */
+gchar* chomp_tail_newline(gchar* object);
 
 #endif
