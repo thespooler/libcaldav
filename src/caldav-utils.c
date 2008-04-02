@@ -419,7 +419,8 @@ static gchar* parse_caldav_report_wrap(
 	g_free(begin_type);
 	g_free(end_type);
 	if (wrap)
-		response = g_strdup_printf("%s%s", response, VCAL_FOOT);
+		if (response)
+			response = g_strdup_printf("%s%s", response, VCAL_FOOT);
 	return response;
 }
 

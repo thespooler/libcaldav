@@ -34,12 +34,12 @@
  */
 static const char* getname_request =
 "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
-"<C:propfind xmlns:D=\"DAV:\""
+"<D:propfind xmlns:D=\"DAV:\""
 "                 xmlns:C=\"urn:ietf:params:xml:ns:caldav\">"
 "  <D:prop>"
 "    <D:displayname/>"
 "  </D:prop>"
-"</C:propfind>\r\n";
+"</D:propfind>\r\n";
 
 /**
  * Function for getting the display name from collection.
@@ -63,7 +63,7 @@ gboolean caldav_getname(caldav_settings* settings, caldav_error* error) {
 	headers.size = 0;
 	http_header = curl_slist_append(http_header,
 			"Content-Type: application/xml; charset=\"utf-8\"");
-	http_header = curl_slist_append(http_header, "Depth: 1");
+	http_header = curl_slist_append(http_header, "Depth: 0");
 	http_header = curl_slist_append(http_header, "Expect:");
 	http_header = curl_slist_append(http_header, "Transfer-Encoding:");
 	data.trace_ascii = settings->trace_ascii;
@@ -115,9 +115,23 @@ gboolean caldav_getname(caldav_settings* settings, caldav_error* error) {
 		result = TRUE;
 	}
 	else {
-		gchar* displayname;
-		displayname = get_tag("displayname", chunk.memory);
-		settings->file = g_strdup(displayname);
+		long code;
+		res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
+		if (code != 207) {
+			error->code = code;
+			error->str = g_strdup(headers.memory);
+			result = TRUE;
+		}
+		else {
+			gchar* displayname;
+			displayname = get_tag("displayname", chunk.memory);
+			/* Maybe namespace prefixed */
+			if (!displayname) {
+				displayname = get_tag("D:displayname", chunk.memory);
+			}
+			settings->file = (displayname) ? 
+					g_strdup(displayname) : g_strdup("");
+		}
 	}
 	if (chunk.memory)
 		free(chunk.memory);

@@ -263,12 +263,15 @@ int main(int argc, char **argv) {
 		else
 			fprintf(stdout, "\n");
 	}
-	else {
+	else if (ACTION == OPTIONS) {
 		char** tmp = options;
 		while (*options) {
 			fprintf(stdout, "%s\n", *options++);
 		}
 		g_strfreev(tmp);
+	}
+	else {
+		fprintf(stdout, "empty collection\n");
 	}
 	fprintf(stdout, "OK\n");
 	return 0;
