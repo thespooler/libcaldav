@@ -5,7 +5,7 @@ In the nearest future:
 	fully functional at the moment.
 		- This will be implemented in the nextrelease.
 
-	- Searching free/busy information is lacking.
+	- Searching free/busy information is lacking (VFREEBUSY).
 		- This will be implemented in the next release.
 
 	- Displaying capabilities.
@@ -13,6 +13,6 @@ In the nearest future:
 
 Something to come at a later time:
 
-	- Implement ToDo support
+	- Implement ToDo support 
 	- Implement Journal support 
 

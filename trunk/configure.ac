@@ -27,10 +27,16 @@ AM_MAINTAINER_MODE
 AC_CONFIG_HEADER([config.h])
 
 if test $USE_MAINTAINER_MODE = yes; then
-		CFLAGS="-g -Wall"
+	CFLAGS="-g -Wall"
+	STATIC=1
+	DYNAMIC=0
 else
-		CFLAGS="$CFLAGS -O2 -Wall"
+	CFLAGS="$CFLAGS -O2 -Wall"
+	STATIC=0
+	DYNAMIC=1
 fi
+AM_CONDITIONAL([STATIC_LINK], [test $STATIC -eq 1])
+AM_CONDITIONAL([DYNAMIC_LINK], [test $DYNAMIC -eq 1])
 
 # Checks for programs.
 AC_PROG_CC
@@ -83,13 +89,19 @@ AC_CONFIG_COMMANDS(
     echo "libcaldav will be compiled with these settings:"
     echo ""
     echo -e "\tBuild caldav-test:\t$caldav"
+	echo -e "\tLibrary is linked:\t$link"
 	echo ""
 	echo -e "Now run make to build the library"
 	echo ""
 	echo -e "Please send bugs or feature requests to the maintainer(s)."
 	echo -e "Email addresses can be found in the AUTHORS file."
     echo ""],
-    [caldav=${caldav}]
+    [caldav=${caldav}
+	 if test $DYNAMIC -eq 1; then
+		link="Dynamic"
+	else
+		link="Static"
+	fi]
 )
 
 AC_OUTPUT([

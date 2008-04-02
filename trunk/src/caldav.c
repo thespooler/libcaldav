@@ -441,8 +441,11 @@ char** caldav_get_server_options(const char* URL) {
 	caldav_settings settings;
 	response server_options;
 	struct config_data data;
+	gchar** option_list;
+	gchar** tmp;
 	gboolean res = FALSE;
 
+	tmp = option_list = NULL;
 	error = (caldav_error *) malloc(sizeof(struct _caldav_error));
 	memset(error, '\0', sizeof(struct _caldav_error));
 	init_caldav_settings(&settings);
@@ -474,11 +477,13 @@ char** caldav_get_server_options(const char* URL) {
 	res = caldav_getoptions(curl, settings.url, &server_options, error, FALSE);
 	free_caldav_settings(&settings);
 	curl_easy_cleanup(curl);
-	gchar** options = g_strsplit(server_options.msg, ", ", 0);
-	gchar** tmp = options;
-	while (*tmp) {
-		*tmp = g_strchug(*tmp);
-		*tmp++ = g_strchomp(*tmp);
+	if (server_options.msg) {
+		option_list = g_strsplit(server_options.msg, ", ", 0);
+		tmp = &(*(option_list));
+		while (*tmp) {
+			*tmp = g_strchug(*tmp);
+			*tmp++ = g_strchomp(*tmp);
+		}
 	}
-	return (options) ? options : NULL;
+	return (option_list) ? option_list : NULL;
 }

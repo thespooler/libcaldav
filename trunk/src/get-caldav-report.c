@@ -43,7 +43,7 @@ static const char* getall_request =
 " <C:filter>"
 "   <C:comp-filter name=\"VCALENDAR\">"
 "     <C:comp-filter name=\"VEVENT\"/>"
-"   </C:comp-filter name=\"VCALENDAR\">"
+"   </C:comp-filter>"
 " </C:filter>"
 "</C:calendar-query>\r\n";
 
@@ -53,10 +53,12 @@ static const char* getall_request =
  */
 static const char* getrange_request_head =
 "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
-"<C:calendar-query xmlns:D=\"DAV:\""
+/*"<C:calendar-query xmlns:D=\"DAV:\""
 "                 xmlns:C=\"urn:ietf:params:xml:ns:caldav\">"
-" <D:prop>"
-"   <D:getetag/>"
+" <D:prop>"*/
+"<C:calendar-query xmlns:C=\"urn:ietf:params:xml:ns:caldav\">"
+" <D:prop xmlns:D=\"DAV:\">"
+/*"   <D:getetag/>"*/
 "   <C:calendar-data/>"
 " </D:prop>"
 " <C:filter>"
@@ -146,9 +148,19 @@ gboolean caldav_getall(caldav_settings* settings, caldav_error* error) {
 		result = TRUE;
 	}
 	else {
-		gchar* report;
-		report = parse_caldav_report(chunk.memory, "calendar-data", "VEVENT");
-		settings->file = g_strdup(report);
+		long code;
+		res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
+		if (code != 207) {
+			error->code = code;
+			error->str = g_strdup(headers.memory);
+			result = TRUE;
+		}
+		else {
+			gchar* report;
+			report = parse_caldav_report(
+						chunk.memory, "calendar-data", "VEVENT");
+			settings->file = g_strdup(report);
+		}
 	}
 	if (chunk.memory)
 		free(chunk.memory);

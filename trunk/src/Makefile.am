@@ -3,10 +3,13 @@ AUTOMAKE_OPTIONS = gnu
 INCLUDES = @CURL_CFLAGS@ @GLIB_CFLAGS@ \
 		   -I$(top_srcdir) -I$(top_builddir)
 
-#noinst_LTLIBRARIES = libcaldav.la
+if STATIC_LINK
+noinst_LTLIBRARIES = libcaldav.la
+endif
 
-#Uncomment above and comment out belowe to use inside vcalendar plugin
+if DYNAMIC_LINK
 lib_LTLIBRARIES = libcaldav.la
+endif
 
 libcaldav_la_LDFLAGS = -version-info @LIBVERSION@
 
