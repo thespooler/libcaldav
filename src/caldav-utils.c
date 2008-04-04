@@ -377,25 +377,19 @@ static gchar* parse_caldav_report_wrap(
 	while ((pos = strstr(report, element)) != NULL && keep_going) {
 		pos = strchr(pos, '>');
 		if (!pos) {
-			g_free(begin_type);
-			g_free(end_type);
-			return NULL;
+			break;
 		}
 		pos = &(*(pos + 1));
 		pos = strstr(pos, begin_type);
 		if (!pos) {
-			g_free(begin_type);
-			g_free(end_type);
-			return NULL;
+			break;
 		}
 		object = &(*(pos + strlen(begin_type)));
 		object = chomp_head_newline(object);
 		start = g_strdup(object);
 		if ((pos = strstr(start, end_type)) == NULL) {
 			g_free(start);
-			g_free(begin_type);
-			g_free(end_type);
-			return NULL;
+			break;
 		}
 		object = g_strndup(start, strlen(start) - strlen(pos));
 		if (response)

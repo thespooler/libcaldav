@@ -34,8 +34,9 @@
  */
 static char* search_head =
 "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
-"<C:calendar-query xmlns:C=\"urn:ietf:params:xml:ns:caldav\">"
-"  <D:prop xmlns:D=\"DAV:\">"
+"<C:calendar-query xmlns:D=\"DAV:\""
+"                  xmlns:C=\"urn:ietf:params:xml:ns:caldav\">"
+"  <D:prop>"
 "    <D:getetag/>"
 "    <C:calendar-data/>"
 "  </D:prop>"
@@ -119,15 +120,19 @@ gboolean caldav_modify(caldav_settings* settings, caldav_error* error) {
 	}
 	curl_easy_setopt(curl, CURLOPT_URL, settings->url);
 	gchar* file = g_strdup(settings->file);
-	if ((uid = get_response_header("uid", file, TRUE)) == NULL) {
+	if ((uid = get_response_header("uid", file, FALSE)) == NULL) {
 		g_free(file);
 		error->code = 1;
 		error->str = g_strdup("Error: Missing required UID for object");
 		return TRUE;
 	}
 	g_free(file);
+	/*
+	 * collation is not supported by ICalendar.
+	 * <C:text-match collation=\"i;ascii-casemap\">%s</C:text-match>
+	 */
 	search = g_strdup_printf(
-		"%s\r\n<C:text-match collation=\"i;ascii-casemap\">%s</C:text-match>\r\n%s",
+		"%s\r\n<C:text-match>%s</C:text-match>\r\n%s",
 		search_head, uid, search_tail);
 	g_free(uid);
 	/* enable uploading */

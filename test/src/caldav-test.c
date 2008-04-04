@@ -270,7 +270,7 @@ int main(int argc, char **argv) {
 		}
 		g_strfreev(tmp);
 	}
-	else {
+	else if (ACTION == GET || ACTION == GETALL || ACTION == GETCALNAME) {
 		fprintf(stdout, "empty collection\n");
 	}
 	fprintf(stdout, "OK\n");
