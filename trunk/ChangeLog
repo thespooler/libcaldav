@@ -1,3 +1,27 @@
+libcaldav (0.2.0)
+
+  * This version is a maintenance release due to important bugs.
+  * 1) Bugs found in XML which produced incorrect requests corrected
+  * 2) Added an option to configure to request dynamic or static library
+  * 3) Build system clean up
+  * 4) Discovered possible null pointers in error messages which is now
+       eliminated
+  * 5) Resolve bug in get_response_header which caused function to
+       change contents of variable in calling function
+  * 6) Added extra variable to get_response_header to decide whether returned
+       string should be all lower or not
+	7) Function get_tag can now also handle namespace prefix in tags
+	8) Added function caldav_getoptions to have a list of supported options
+	   by the server returned.
+  * 9) Compatibily tests run against Chandler and Apple's ICalendar
+       - Chandler: calendar-query not working due to bugs in Chandler's
+	     implementation of calendar-query which is not conforming to RFC4791
+	   - ICalendar: After adding namespace prefix awareness all test ran as
+	     expected.
+  * 10) The CLI test application upgraded to use new features.
+
+ -- Michael Rasmussen <mir@datanom.net>  Thu, 03 Apr 2008 10:10:00 +0100
+
 libcaldav (0.1.0)
 
   * first public release
