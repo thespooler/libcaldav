@@ -125,11 +125,13 @@ typedef enum {
  * FORBIDDEN (HTTP 403). Access not allowed. Dont repeat request.
  * CONFLICT (HTTP 409). Conflict between current state of CalDAV collection
  * and request. Client must solve the conflict and then resend request.
+ * LOCKED (HTTP 423). Locking failed.
  */
 typedef enum {
 	OK,
 	FORBIDDEN,
-	CONFLICT
+	CONFLICT,
+	LOCKED
 } CALDAV_RESPONSE;
 
 /**

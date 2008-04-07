@@ -22,6 +22,7 @@
 #endif
 
 #include "modify-caldav-object.h"
+#include "lock-caldav-object.h"
 #include <glib.h>
 #include <curl/curl.h>
 #include <stdio.h>
@@ -72,6 +73,8 @@ gboolean caldav_modify(caldav_settings* settings, caldav_error* error) {
 	gchar* search;
 	gchar* uid;
 	gboolean result = FALSE;
+	gboolean LOCKSUPPORT = FALSE;
+	gchar* lock_token = NULL;
 
 	chunk.memory = NULL; /* we expect realloc(NULL, size) to work */
 	chunk.size = 0;    /* no data at this point */
@@ -179,6 +182,9 @@ gboolean caldav_modify(caldav_settings* settings, caldav_error* error) {
 				}
 			}
 			if (url) {
+				int lock = 0;
+				caldav_error lock_error;
+
 				etag = g_strdup_printf("If-Match: %s", etag);
 				http_header = curl_slist_append(http_header, etag);
 				g_free(etag);
@@ -187,16 +193,49 @@ gboolean caldav_modify(caldav_settings* settings, caldav_error* error) {
 				http_header = curl_slist_append(http_header, "Expect:");
 				http_header = curl_slist_append(
 								http_header, "Transfer-Encoding:");
-				curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
-				curl_easy_setopt(curl, CURLOPT_URL, url);
+				LOCKSUPPORT = caldav_lock_support(settings, &lock_error);
+				if (LOCKSUPPORT) {
+					lock_token = caldav_lock_object(url, settings, &lock_error);
+					if (lock_token) {
+						http_header = curl_slist_append(
+							http_header, g_strdup_printf(
+									"If: (%s)", lock_token));
+					}
+					/*
+					 * If error code is 501 (Not implemented) we continue
+					 * hoping for the best.
+					 */
+					else if (lock_error.code == 501) {
+						lock_token = g_strdup("");
+					}
+					else {
+						lock = -1;
+					}
+				}
+				if (! LOCKSUPPORT || (LOCKSUPPORT && lock_token)) {
+					curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
+					curl_easy_setopt(curl, CURLOPT_URL, url);
+					curl_easy_setopt(curl, CURLOPT_POSTFIELDS, settings->file);
+					curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, 
+								strlen(settings->file));
+					curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+					res = curl_easy_perform(curl);
+					if (LOCKSUPPORT && lock_token) {
+						caldav_unlock_object(
+								lock_token, url, settings, &lock_error);
+					}
+				}
 				g_free(url);
-				curl_easy_setopt(curl, CURLOPT_POSTFIELDS, settings->file);
-				curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, strlen(settings->file));
-				curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
-				res = curl_easy_perform(curl);
-				if (res != 0) {
-					error->code = code;
-					error->str = g_strdup(chunk.memory);
+				if (res != 0 || lock < 0) {
+					/* Is this a lock_error don't change error*/
+					if (lock == 0) {
+						error->code = code;
+						error->str = g_strdup(chunk.memory);
+					}
+					else {
+						error->code = lock_error.code;
+						error->str = g_strdup(lock_error.str);
+					}
 					result = TRUE;
 					settings->file = NULL;
 				}

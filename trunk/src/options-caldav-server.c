@@ -79,7 +79,6 @@ gboolean caldav_getoptions(CURL* curl, gchar* url, response* result,
 		head = get_response_header("DAV", headers.memory, TRUE);
 		if (head && strstr(head, "calendar-access") != NULL) {
 			enabled = TRUE;
-			g_free(error);
 			if (! test) {
 				result->msg = g_strdup(
 						get_response_header("Allow", headers.memory, FALSE));

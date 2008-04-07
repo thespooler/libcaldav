@@ -198,18 +198,4 @@ gchar* get_etag(gchar* text);
  */
 gchar* get_tag(const gchar* tag, gchar* text);
 
-/**
- * Removes newlines from beginning of string.
- * @param object String
- * @return String
- */
-gchar* chomp_head_newline(gchar* object);
-
-/**
- * Removes trailing newlines.
- * @param object String
- * @return String
- */
-gchar* chomp_tail_newline(gchar* object);
-
 #endif

@@ -1,3 +1,13 @@
+libcaldav (0.3.0)
+  * This version implements locking if the server supports this. Locking
+  will be done every time a request for modify or delete is sent to the
+  server
+  * 1) In ICalendar all plain text is wrapped inside DTD CDATA elements
+  * 2) ICalendar does not support collations for text-match in which case
+  collations has been removed from request - default is i;ascii-casemap anyhow
+
+-- Michael Rasmussen <mir@datanom.net>  Thu, 08 Apr 2008 00:06:24 +0100
+
 libcaldav (0.2.0)
 
   * This version is a maintenance release due to important bugs.

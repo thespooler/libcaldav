@@ -37,7 +37,7 @@
 
 typedef struct debug_curl debug_options;
 static debug_options options = {1,0};
-static caldav_error* error;
+static caldav_error error;
 
 /**
  * @param curl An instance of libcurl.
@@ -48,9 +48,9 @@ static caldav_error* error;
  * resource. TRUE if the URL does reference a CalDAV calendar resource.
  */
 static gboolean test_caldav_enabled(CURL* curl, gchar* url) {
-	error = (caldav_error *) malloc(sizeof(struct _caldav_error));
-	memset(error, '\0', sizeof(struct _caldav_error));
-	return caldav_getoptions(curl, url, NULL, error, TRUE);
+/*	error = (caldav_error *) malloc(sizeof(struct _caldav_error));
+	memset(error, '\0', sizeof(struct _caldav_error));*/
+	return caldav_getoptions(curl, url, NULL, &error, TRUE);
 }
 
 /* 
@@ -64,7 +64,7 @@ static gboolean make_caldav_call(caldav_settings* settings) {
 	
 	curl = curl_easy_init();
 	if (!curl) {
-		error->str = g_strdup("Could not initialize libcurl");
+		error.str = g_strdup("Could not initialize libcurl");
 		settings->file = NULL;
 		return TRUE;
 	}
@@ -83,20 +83,16 @@ static gboolean make_caldav_call(caldav_settings* settings) {
 		curl_easy_cleanup(curl);
 		return TRUE;
 	}
-	error = (caldav_error *) malloc(sizeof(struct _caldav_error));
-	memset(error, '\0', sizeof(struct _caldav_error));
 	curl_easy_cleanup(curl);
 	switch (settings->ACTION) {
-		case GETALL: result = caldav_getall(settings, error); break;
-		case GET: result = caldav_getrange(settings, error); break;
-		case ADD: result = caldav_add(settings, error); break;
-		case DELETE: result = caldav_delete(settings, error); break;
-		case MODIFY: result = caldav_modify(settings, error); break;
-		case GETCALNAME: result = caldav_getname(settings, error); break;
+		case GETALL: result = caldav_getall(settings, &error); break;
+		case GET: result = caldav_getrange(settings, &error); break;
+		case ADD: result = caldav_add(settings, &error); break;
+		case DELETE: result = caldav_delete(settings, &error); break;
+		case MODIFY: result = caldav_modify(settings, &error); break;
+		case GETCALNAME: result = caldav_getname(settings, &error); break;
 		default: break;
 	}
-	if (!result)
-		g_free(error);
 	return result;
 }
 
@@ -406,11 +402,11 @@ caldav_error* caldav_get_error(caldav_error* lib_error) {
 		lib_error = (caldav_error *) malloc(sizeof(struct _caldav_error));
 		memset(lib_error, '\0', sizeof(struct _caldav_error));
 	}
-	lib_error->code = error->code;
-	if (error->str) {
-		lib_error->str = (char *) malloc(strlen(error->str) + 1);
-		memset(lib_error->str, '\0', strlen(error->str) + 1);
-		memcpy(lib_error->str, error->str, strlen(error->str));
+	lib_error->code = error.code;
+	if (error.str) {
+		lib_error->str = (char *) malloc(strlen(error.str) + 1);
+		memset(lib_error->str, '\0', strlen(error.str) + 1);
+		memcpy(lib_error->str, error.str, strlen(error.str));
 	}
 	/*free_static_caldav_error();*/
 	return lib_error;
@@ -446,8 +442,8 @@ char** caldav_get_server_options(const char* URL) {
 	gboolean res = FALSE;
 
 	tmp = option_list = NULL;
-	error = (caldav_error *) malloc(sizeof(struct _caldav_error));
-	memset(error, '\0', sizeof(struct _caldav_error));
+	/*error = (caldav_error *) malloc(sizeof(struct _caldav_error));
+	memset(error, '\0', sizeof(struct _caldav_error));*/
 	init_caldav_settings(&settings);
 	if (options.trace_ascii)
 		data.trace_ascii = 1;
@@ -474,15 +470,14 @@ char** caldav_get_server_options(const char* URL) {
 		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
 		g_free(userpwd);
 	}
-	res = caldav_getoptions(curl, settings.url, &server_options, error, FALSE);
+	res = caldav_getoptions(curl, settings.url, &server_options, &error, FALSE);
 	free_caldav_settings(&settings);
 	curl_easy_cleanup(curl);
 	if (server_options.msg) {
 		option_list = g_strsplit(server_options.msg, ", ", 0);
 		tmp = &(*(option_list));
 		while (*tmp) {
-			*tmp = g_strchug(*tmp);
-			*tmp++ = g_strchomp(*tmp);
+			g_strstrip(*tmp++);
 		}
 	}
 	return (option_list) ? option_list : NULL;

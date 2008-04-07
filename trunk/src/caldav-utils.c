@@ -307,6 +307,8 @@ gchar* get_response_header(
 			if (buf[1] != NULL) {
 				if (g_ascii_strcasecmp(buf[0], header) == 0) {
 					head = g_strdup(buf[1]);
+					if (head)
+						g_strstrip(head);
 					g_strfreev(buf);
 					break;
 				}
@@ -318,31 +320,6 @@ gchar* get_response_header(
 		return (lowcase) ? g_ascii_strdown(head, -1) : head;
 	else
 		return NULL;
-}
-
-/**
- * Removes newlines from beginning of string.
- * @param object String
- * @return String
- */
-gchar* chomp_head_newline(gchar* object) {
-	while (object[0] == '\r' || object[0] == '\n')
-		object = &(*(object + 1));
-	return object;
-}
-
-/**
- * Removes trailing newlines.
- * @param object String
- * @return String
- */
-gchar* chomp_tail_newline(gchar* object) {
-	int i;
-
-	for(i = strlen(object) - 1; object[i] == '\r' || object[i] == '\n'; i--)
-		object[i] = '\0';
-	object = realloc(object, strlen(object));
-	return object;
 }
 
 static const char* VCAL_HEAD =
@@ -385,7 +362,7 @@ static gchar* parse_caldav_report_wrap(
 			break;
 		}
 		object = &(*(pos + strlen(begin_type)));
-		object = chomp_head_newline(object);
+		object = g_strchug(object);
 		start = g_strdup(object);
 		if ((pos = strstr(start, end_type)) == NULL) {
 			g_free(start);
@@ -503,7 +480,7 @@ gchar* verify_uid(gchar* object) {
 		g_free(newobj);
 		pos = strstr(object, "END:VEVENT");
 		newobj = g_strndup(object, strlen(object) - strlen(pos));
-		newobj = chomp_tail_newline(newobj);
+		newobj = g_strchomp(newobj);
 		uid = random_file_name(object);
 		newobj = g_strdup_printf("%s\r\nUID:libcaldav-%s@tempuri.org\r\n%s",
 					newobj, uid, pos);
@@ -511,7 +488,7 @@ gchar* verify_uid(gchar* object) {
 	}
 	if (uid)
 		g_free(uid);
-	newobj = chomp_tail_newline(newobj);
+	newobj = g_strchomp(newobj);
 	return newobj;
 }
 
