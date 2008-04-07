@@ -1,10 +1,5 @@
 In the nearest future:
 
-	- In the present state there are no support for locking so users
-	should be adviced that multiple access to the same calendar is not
-	fully functional at the moment.
-		- This will be implemented in the nextrelease.
-
 	- Searching free/busy information is lacking (VFREEBUSY).
 		- This will be implemented in the next release.
 

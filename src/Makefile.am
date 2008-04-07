@@ -31,7 +31,9 @@ libcaldav_la_SOURCES = \
 			  md5.c \
 			  md5.h \
 			  options-caldav-server.c \
-			  options-caldav-server.h
+			  options-caldav-server.h \
+			  lock-caldav-object.c \
+			  lock-caldav-object.h 
 
 libcaldav_includedir=$(includedir)/libcaldav-@VERSION@
 libcaldav_include_HEADERS = caldav.h
