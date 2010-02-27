@@ -2,7 +2,7 @@
 
 echo "Rebuilding build system......"
 
-autoreconf > /dev/null 2>&1
+autoreconf --version 2>&1 > /dev/null 2>&1
 
 if [ $? -eq 0 ]; then
 	AUTORECONF=autoreconf
