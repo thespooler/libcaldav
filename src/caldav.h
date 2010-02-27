@@ -134,6 +134,12 @@ typedef enum {
 	LOCKED
 } CALDAV_RESPONSE;
 
+
+#ifndef __CALDAV_USERAGENT
+#define __CALDAV_USERAGENT "libcurl-agent/0.1"
+#endif
+
+
 /**
  * Function for adding a new event.
  * @param object Appointment following ICal format (RFC2445). Receiver is

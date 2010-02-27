@@ -96,7 +96,7 @@ gchar* caldav_lock_object(
 	curl_easy_setopt(curl, CURLOPT_WRITEHEADER, (void *)&headers);
 	/* some servers don't like requests that are made without a user-agent
 	 * field, so we provide one */
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/0.1");
+	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, &error_buf);
 	if (settings->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
@@ -193,7 +193,7 @@ gboolean caldav_unlock_object(gchar* lock_token, gchar* URI,
 	curl_easy_setopt(curl, CURLOPT_WRITEHEADER, (void *)&headers);
 	/* some servers don't like requests that are made without a user-agent
 	 * field, so we provide one */
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/0.1");
+	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, &error_buf);
 	if (settings->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
@@ -240,17 +240,24 @@ gboolean caldav_unlock_object(gchar* lock_token, gchar* URI,
 gboolean caldav_lock_support(caldav_settings* settings, caldav_error* error) {
 	gboolean found = FALSE;
 	gchar* url = NULL;
+    gchar* mystr = NULL;
+	if (settings->usehttps) {
+		mystr =  g_strdup("https://");
+	} else {
+		mystr =  g_strdup("http://");
+	}
+	
 
 	if (settings->username && settings->password) {
-		url = g_strdup_printf("http://%s:%s@%s",
-				settings->username, settings->password, settings->url);
+		url = g_strdup_printf("%s%s:%s@%s",
+				mystr, settings->username, settings->password, settings->url);
 	}
 	else if (settings->username) {
-		url = g_strdup_printf("http://%s@%s", 
-				settings->username, settings->url);
+		url = g_strdup_printf("%s%s@%s", 
+				mystr, settings->username, settings->url);
 	}
 	else {
-		url = g_strdup_printf("http://%s", settings->url);
+		url = g_strdup_printf("%s%s", mystr, settings->url);
 	}
 	gchar** options = caldav_get_server_options(url);
 	while (*options) {
@@ -259,6 +266,7 @@ gboolean caldav_lock_support(caldav_settings* settings, caldav_error* error) {
 			break;
 		}
 	}			
+	g_free(mystr);
 	return found;
 }
 

@@ -26,7 +26,7 @@
 /**
  * Function for getting supported options from a server.
  * @param curl A pointer to an initialized CURL instance
- * @param url string containing the URL to the server. If authentication
+ * @param settings struct containing the URL to the server. If authentication
  * is required prior to making the call the credentials must be available
  * via CURLOPT_USERPWD before calling.
  * @param result A pointer to a struct _response. If test is true
@@ -37,7 +37,7 @@
  * represented by the URL is a CalDAV collection or not.
  * @return FALSE in case of error, TRUE otherwise.
  */
-gboolean caldav_getoptions(CURL* curl, gchar* url, response* result,
+gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* result,
 				caldav_error* error, gboolean test);
 
 #endif

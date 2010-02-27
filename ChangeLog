@@ -1,3 +1,17 @@
+libcaldav (0.4.0)
+  * Extend test client to be able to use both http and https
+  * Clean up some build instructions
+
+-- Michael Rasmussen <mir@datanom.net>  Sat, 27 Feb 2010 12:06:24 +0100
+
+libcaldav (0.3.1)
+  * Add https support
+  * make the useragent a configurable string, as some server doesn't like
+   'curl'
+
+-- Emmanuel Blindauer <e.blindauer@gmail.com> Fri Feb 26 20:49:16 CET 2010
+
+
 libcaldav (0.3.0)
   * This version implements locking if the server supports this. Locking
   will be done every time a request for modify or delete is sent to the

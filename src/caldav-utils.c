@@ -195,6 +195,7 @@ void init_caldav_settings(caldav_settings* settings) {
 	settings->password = NULL;
 	settings->url = NULL;
 	settings->file = NULL;
+	settings->usehttps = FALSE;
 	settings->debug = FALSE;
 	settings->trace_ascii = 1;
 	settings->ACTION = UNKNOWN;
@@ -223,6 +224,7 @@ void free_caldav_settings(caldav_settings* settings) {
 		g_free(settings->file);
 		settings->file = NULL;
 	}
+	settings->usehttps = FALSE;
 	settings->debug = FALSE;
 	settings->trace_ascii = 1;
 	settings->ACTION = UNKNOWN;
@@ -245,6 +247,10 @@ void parse_url(caldav_settings* settings, const char* url) {
 	if (!url)
 		return;
 	if ((pos = strstr(url, "//")) != NULL) {
+		/* Does the URL use https ?*/
+		if (!g_ascii_strncasecmp(url,"https",5)) {
+				settings->usehttps=TRUE;
+		}
 		start = g_strdup(&(*(pos + 2)));
 		if ((pos = strchr(start, '@')) != NULL) {
 			/* username and/or password present */
@@ -553,4 +559,35 @@ gchar* get_host(gchar* url) {
 	}
 	g_strfreev(buf);
 	return result;
+}
+
+/**
+ * rebuild a ral URL with https if needed from the settings
+ * @param settings caldav_settings
+ * @return URL
+ */
+
+gchar* rebuild_url(caldav_settings* settings){
+    gchar* url = NULL;
+    gchar* mystr = NULL;
+	if (settings->usehttps) {
+		mystr = "https://";
+	} else {
+		mystr = "http://";
+	}
+	/* XXX We probably don't need to pass username and password in the URL as
+	 * they have to be set with the curl-way */
+/*
+    if (settings->username && settings->password) {
+        url = g_strdup_printf("%s%s:%s@%s",
+                mystr,settings->username, settings->password, settings->url);
+    }
+    else if (settings->username) {
+        url = g_strdup_printf("%s%s@%s",
+                mystr,settings->username, settings->url);
+    }
+    else {*/
+        url = g_strdup_printf("%s%s", mystr,settings->url);
+/*    }*/
+	return url;
 }
