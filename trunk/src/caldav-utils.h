@@ -41,6 +41,7 @@ struct _CALDAV_SETTINGS {
 	gchar* password;
 	gchar* url;
 	gchar* file;
+	gboolean usehttps;
 	gboolean debug;
 	char trace_ascii;
 	CALDAV_ACTION ACTION;
@@ -197,5 +198,14 @@ gchar* get_etag(gchar* text);
  * @return element
  */
 gchar* get_tag(const gchar* tag, gchar* text);
+
+
+
+/**
+ * rebuild a ral URL with https if needed from the settings
+ * @param settings caldav_settings
+ * @return URL
+ */
+gchar* rebuild_url(caldav_settings* settings);
 
 #endif

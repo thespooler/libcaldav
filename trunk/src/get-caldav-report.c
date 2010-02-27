@@ -131,7 +131,7 @@ gboolean caldav_getall(caldav_settings* settings, caldav_error* error) {
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
 	/* some servers don't like requests that are made without a user-agent
 	 * field, so we provide one */
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/0.1");
+	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, &error_buf);
 	if (settings->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
@@ -139,7 +139,7 @@ gboolean caldav_getall(caldav_settings* settings, caldav_error* error) {
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
 	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "REPORT");
-	curl_easy_setopt(curl, CURLOPT_URL, settings->url);
+	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings));
 	res = curl_easy_perform(curl);
 	if (res != 0) {
 		error->code = -1;
@@ -226,14 +226,14 @@ gboolean caldav_getrange(caldav_settings* settings, caldav_error* error) {
 	curl_easy_setopt(curl, CURLOPT_WRITEHEADER, (void *)&headers);
 	/* some servers don't like requests that are made without a user-agent
 	 * field, so we provide one */
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/0.1");
+	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, &error_buf);
 	if (settings->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
 		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
-	curl_easy_setopt(curl, CURLOPT_URL, settings->url);
+	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings));
 	request = g_strdup_printf(
 		"%s\r\n<C:time-range start=\"%s\"\r\n end=\"%s\"/>\r\n%s",
 			getrange_request_head, get_caldav_datetime(&settings->start),

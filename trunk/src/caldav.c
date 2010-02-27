@@ -41,16 +41,16 @@ static caldav_error error;
 
 /**
  * @param curl An instance of libcurl.
- * @param url Defines CalDAV resource. Receiver is responsible for freeing
- * the memory. [http://][username:password@]host[:port]/url-path.
+ * @param settings Defines CalDAV resource. Receiver is responsible for freeing
+ * the memory. URL is part of the structure. [http://][username:password@]host[:port]/url-path.
  * See (RFC1738).
  * @return FALSE (zero) mens URL does not reference a CalDAV calendar
  * resource. TRUE if the URL does reference a CalDAV calendar resource.
  */
-static gboolean test_caldav_enabled(CURL* curl, gchar* url) {
+static gboolean test_caldav_enabled(CURL* curl, caldav_settings* settings) {
 /*	error = (caldav_error *) malloc(sizeof(struct _caldav_error));
 	memset(error, '\0', sizeof(struct _caldav_error));*/
-	return caldav_getoptions(curl, url, NULL, &error, TRUE);
+	return caldav_getoptions(curl, settings, NULL, &error, TRUE);
 }
 
 /* 
@@ -61,7 +61,7 @@ static gboolean test_caldav_enabled(CURL* curl, gchar* url) {
 static gboolean make_caldav_call(caldav_settings* settings) {
 	CURL* curl;
 	gboolean result = FALSE;
-	
+
 	curl = curl_easy_init();
 	if (!curl) {
 		error.str = g_strdup("Could not initialize libcurl");
@@ -78,7 +78,7 @@ static gboolean make_caldav_call(caldav_settings* settings) {
 		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
 		g_free(userpwd);
 	}
-	if (!test_caldav_enabled(curl, settings->url)) {
+	if (!test_caldav_enabled(curl, settings)) {
 		settings->file = NULL;
 		curl_easy_cleanup(curl);
 		return TRUE;
@@ -373,7 +373,7 @@ int caldav_enabled_resource(const char* URL) {
 		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
 		g_free(userpwd);
 	}
-	gboolean res = test_caldav_enabled(curl, settings.url);
+	gboolean res = test_caldav_enabled(curl, &settings);
 	free_caldav_settings(&settings);
 	curl_easy_cleanup(curl);
 	return (res) ? 1 : 0;
@@ -470,7 +470,7 @@ char** caldav_get_server_options(const char* URL) {
 		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
 		g_free(userpwd);
 	}
-	res = caldav_getoptions(curl, settings.url, &server_options, &error, FALSE);
+	res = caldav_getoptions(curl, &settings, &server_options, &error, FALSE);
 	free_caldav_settings(&settings);
 	curl_easy_cleanup(curl);
 	if (server_options.msg) {

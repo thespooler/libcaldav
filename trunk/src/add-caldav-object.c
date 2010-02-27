@@ -82,7 +82,7 @@ gboolean caldav_add(caldav_settings* settings, caldav_error* error) {
 	curl_easy_setopt(curl, CURLOPT_WRITEHEADER, (void *)&headers);
 	/* some servers don't like requests that are made without a user-agent
 	 * field, so we provide one */
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/0.1");
+	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, &error_buf);
 	if (settings->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
@@ -90,7 +90,10 @@ gboolean caldav_add(caldav_settings* settings, caldav_error* error) {
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
 	gchar* tmp = random_file_name(settings->file);
-	settings->url = g_strdup_printf("%s/libcaldav-%s.ics", settings->url, tmp);
+	
+	settings->url = g_strdup_printf("%s/libcaldav-%s.ics", rebuild_url(settings), tmp);
+	/* XXX  settings->url is overwritten with the upload URL. when is the value
+	 * restored ??? */
 	curl_easy_setopt(curl, CURLOPT_URL, settings->url);
 	g_free(tmp);
 	settings->file = verify_uid(settings->file);

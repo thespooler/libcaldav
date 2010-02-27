@@ -30,16 +30,26 @@
 
 gchar* make_url(gchar* uid, gchar* pwd, gchar* url) {
 	char* pos;
+	char* protocol = NULL;
+	char* uri = NULL;
+	char* newurl = NULL;
 
 	if (!uid)
 		return url;
 	if ((pos = strstr(url, "//")) != NULL) {
-		url = g_strdup(&(*(pos + 2)));
+		uri = g_strdup(&(*(pos + 2)));
+		protocol = g_strndup(url, pos + 2 - url);
+	}
+	else {
+	    protocol = g_strdup("http://");
 	}
 	if (!pwd)
-		return g_strdup_printf("http://%s@%s", uid, url);
+		newurl = g_strdup_printf("%s%s@%s", protocol, uid, uri);
 	else
-		return g_strdup_printf("http://%s:%s@%s", uid, pwd, url);
+		newurl = g_strdup_printf("%s%s:%s@%s", protocol, uid, pwd, uri);
+	g_free(uri);
+	g_free(protocol);
+	return newurl;
 }
 
 #define BUFFER 1000

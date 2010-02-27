@@ -31,7 +31,7 @@
 /**
  * Function for getting supported options from a server.
  * @param curl A pointer to an initialized CURL instance
- * @param url string containing the URL to the server. If authentication
+ * @param settings struct containing the URL to the server. If authentication
  * is required prior to making the call the credentials must be available
  * via CURLOPT_USERPWD before calling.
  * @param result A pointer to a struct _response. If test is true
@@ -42,7 +42,7 @@
  * represented by the URL is a CalDAV collection or not.
  * @return FALSE in case of error, TRUE otherwise.
  */
-gboolean caldav_getoptions(CURL* curl, gchar* url, response* result,
+gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* result,
 		caldav_error* error, gboolean test) {
 	CURLcode res = 0;
 	char error_buf[CURL_ERROR_SIZE + 1];
@@ -68,10 +68,10 @@ gboolean caldav_getoptions(CURL* curl, gchar* url, response* result,
 	curl_easy_setopt(curl, CURLOPT_WRITEHEADER, (void *)&headers);
 	/* some servers don't like requests that are made without a user-agent
 	 * field, so we provide one */
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/0.1");
+	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, &error_buf);
 	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "OPTIONS");
-	curl_easy_setopt(curl, CURLOPT_URL, url);
+	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings));
 	res = curl_easy_perform(curl);
 	if (res == 0) {
 		gchar* head;
