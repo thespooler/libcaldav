@@ -1,3 +1,16 @@
+libcaldav (0.4.1)
+  * Fix bug so that SSL specific errors are handled properly.
+    Close bug 2963143.
+  * Add option to build script to disable/enable building of
+    API documentation. Default is disabled.
+  * More cleaning up of the build system.
+  * Fix compile time warnings caused by gcc4.4 and minor change in
+    libcurl API.
+  * Add option to disable verification of peer's certificate
+  * Add option to specify custom CA cert file
+
+-- Michael Rasmussen <mir@datanom.net>  Sat, 7 Mar 2010 09:06:24 +0100
+
 libcaldav (0.4.0)
   * Extend test client to be able to use both http and https
   * Clean up some build instructions

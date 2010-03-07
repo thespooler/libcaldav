@@ -42,6 +42,8 @@ struct _CALDAV_SETTINGS {
 	gchar* url;
 	gchar* file;
 	gboolean usehttps;
+	gboolean verify_ssl_certificate;
+	gchar* custom_cacert;
 	gboolean debug;
 	char trace_ascii;
 	CALDAV_ACTION ACTION;
@@ -79,7 +81,7 @@ struct config_data {
  * @param size
  * @param nohex
  */
-void dump(const char* text, FILE* stream, unsigned char* ptr, size_t size, char nohex);
+void dump(const char* text, FILE* stream, char* ptr, size_t size, char nohex);
 
 /**
  * This function is burrowed from the libcurl documentation
@@ -90,7 +92,7 @@ void dump(const char* text, FILE* stream, unsigned char* ptr, size_t size, char 
  * @param userp
  * @return
  */
-int my_trace(CURL* handle, curl_infotype type, unsigned char* data, size_t size, void* userp);
+int my_trace(CURL* handle, curl_infotype type, char* data, size_t size, void* userp);
 
 /**
  * This function is burrowed from the libcurl documentation
