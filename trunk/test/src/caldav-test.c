@@ -106,6 +106,7 @@ int main(int argc, char **argv) {
 	int c;
 	CALDAV_ACTION ACTION = UNKNOWN;
 	gboolean debug = FALSE;
+	gboolean verify_ssl_certificate = TRUE;
 	FILE* stream = NULL;
 	gchar* username = NULL;
 	gchar* password = NULL;
@@ -116,8 +117,10 @@ int main(int argc, char **argv) {
 	CALDAV_RESPONSE res = UNKNOWN;
 	gchar* input = NULL;
 	char** options = NULL;
+	struct debug_curl opt = {1,0,1, NULL};
+	gchar* custom_cacert = NULL;
 
-	while ((c = getopt(argc, argv, "a:de:f:hp:s:u:?")) != -1) {
+	while ((c = getopt(argc, argv, "a:c:de:f:hp:s:u:v?")) != -1) {
 		switch (c) {
 			case 'h':
 			case '?':
@@ -154,6 +157,9 @@ int main(int argc, char **argv) {
 					return 1;
 				}
 				break;
+			case 'c':
+				custom_cacert = g_strdup(optarg);
+				break;
 			case 'd':
 				debug = TRUE;
 				break;
@@ -174,6 +180,9 @@ int main(int argc, char **argv) {
 				break;
 			case 'u':
 				username = optarg;
+				break;
+			case 'v':
+				verify_ssl_certificate = FALSE;
 				break;
 			default:
 				return 1;
@@ -226,11 +235,12 @@ int main(int argc, char **argv) {
 	}
 	url = make_url(username, password, argv[optind]);
 	if (debug) {
-		struct debug_curl opt;
 		opt.debug = 1;
 		opt.trace_ascii = 1;
-		caldav_set_options(opt);
 	}
+	opt.verify_ssl_certificate = verify_ssl_certificate;
+	opt.custom_cacert = custom_cacert;
+	caldav_set_options(opt);
 	result.msg = NULL;
 	switch (ACTION) {
 		case GETALL: res = caldav_getall_object(&result, url); break;

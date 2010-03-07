@@ -45,7 +45,7 @@
 gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* result,
 		caldav_error* error, gboolean test) {
 	CURLcode res = 0;
-	char error_buf[CURL_ERROR_SIZE + 1];
+	char error_buf[CURL_ERROR_SIZE];
 	struct MemoryStruct chunk;
 	struct MemoryStruct headers;
 	gboolean enabled = FALSE;
@@ -69,7 +69,7 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 	/* some servers don't like requests that are made without a user-agent
 	 * field, so we provide one */
 	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
-	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, &error_buf);
+	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, (char *) &error_buf);
 	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "OPTIONS");
 	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings));
 	res = curl_easy_perform(curl);
@@ -90,6 +90,20 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 			error->code = code;
 			error->str = g_strdup(headers.memory);
 		}
+	}
+	else if (
+		(res == CURLE_SSL_CONNECT_ERROR ||
+		 CURLE_PEER_FAILED_VERIFICATION ||
+		 CURLE_SSL_ENGINE_NOTFOUND ||
+		 CURLE_SSL_ENGINE_SETFAILED ||
+		 CURLE_SSL_CERTPROBLEM ||
+		 CURLE_SSL_CIPHER ||
+		 CURLE_SSL_CACERT ||
+		 CURLE_SSL_CACERT_BADFILE ||
+		 CURLE_SSL_CRL_BADFILE ||
+		 CURLE_SSL_ISSUER_ERROR) && settings->usehttps) {
+		error->code = -2;
+		error->str = g_strdup(error_buf);
 	}
 	else {
 		error->code = -1;

@@ -36,7 +36,7 @@
 #include <string.h>
 
 typedef struct debug_curl debug_options;
-static debug_options options = {1,0};
+static debug_options options = {1,0,1, NULL};
 static caldav_error error;
 
 /**
@@ -78,6 +78,14 @@ static gboolean make_caldav_call(caldav_settings* settings) {
 		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
 		g_free(userpwd);
 	}
+	settings->custom_cacert = options.custom_cacert;
+	settings->verify_ssl_certificate = options.verify_ssl_certificate;
+	if (settings->verify_ssl_certificate)
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
+	else
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
+	if (settings->custom_cacert)
+		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
 	if (!test_caldav_enabled(curl, settings)) {
 		settings->file = NULL;
 		curl_easy_cleanup(curl);
@@ -363,6 +371,14 @@ int caldav_enabled_resource(const char* URL) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
+	settings.custom_cacert = options.custom_cacert;
+	settings.verify_ssl_certificate = options.verify_ssl_certificate;
+	if (settings.verify_ssl_certificate)
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
+	else
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
+	if (settings.custom_cacert)
+		curl_easy_setopt(curl, CURLOPT_CAINFO, settings.custom_cacert);
 	if (settings.username) {
 		gchar* userpwd = NULL;
 		if (settings.password)

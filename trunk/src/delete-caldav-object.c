@@ -64,7 +64,7 @@ static char* search_tail =
 gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 	CURL* curl;
 	CURLcode res = 0;
-	char error_buf[CURL_ERROR_SIZE + 1];
+	char error_buf[CURL_ERROR_SIZE];
 	struct config_data data;
 	struct MemoryStruct chunk;
 	struct MemoryStruct headers;
@@ -114,7 +114,7 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 	/* some servers don't like requests that are made without a user-agent
 	 * field, so we provide one */
 	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
-	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, &error_buf);
+	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, (char *) &error_buf);
 	if (settings->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
 		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);

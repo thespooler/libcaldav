@@ -4,6 +4,7 @@
 AC_PREREQ(2.61)
 
 AC_INIT([libcaldav], m4_esyscmd([sh ./version.sh | tr -d '\n']), [mir@datanom.net])
+AC_CONFIG_MACRO_DIR([m4])
 
 LIBVERSION=m4_esyscmd([sh ./version.sh LIBTOOL | tr -d '\n'])
 AC_SUBST(LIBVERSION)
@@ -25,15 +26,18 @@ DX_INIT_DOXYGEN(libcaldav, doxygen-api.cfg, doc)
 AM_INIT_AUTOMAKE([dist-bzip2 1.9.6])
 AM_MAINTAINER_MODE
 AC_CONFIG_HEADER([config.h])
+AM_MAINTAINER_MODE
 
 if test $USE_MAINTAINER_MODE = yes; then
 	CFLAGS="-g -Wall"
 	STATIC=1
 	DYNAMIC=0
+	BUILD_TEST=true
 else
 	CFLAGS="$CFLAGS -O2 -Wall"
 	STATIC=0
 	DYNAMIC=1
+	BUILD_TEST=false
 fi
 AM_CONDITIONAL([STATIC_LINK], [test $STATIC -eq 1])
 AM_CONDITIONAL([DYNAMIC_LINK], [test $DYNAMIC -eq 1])
@@ -80,16 +84,27 @@ AC_ARG_ENABLE([caldav],
 			yes) caldav=true ;;
 			no) caldav=false ;;
 			*) AC_MSG_ERROR([bad value "${enableval}" for --enable-caldav]) ;;
-			esac], [caldav=false])
+			esac], [caldav=$BUILD_TEST])
 AM_CONDITIONAL([BUILD_CALDAV], [test x$caldav = xtrue])
+
+# Build API documentation
+AC_ARG_ENABLE([doc], 
+		[AC_HELP_STRING(--enable-doc, Build API documentation (default=no))],
+		[case "${enableval}" in
+			yes) doc=true ;;
+			no) doc=false ;;
+			*) AC_MSG_ERROR([bad value "${enableval}" for --enable-doc]) ;;
+			esac], [doc=false])
+AM_CONDITIONAL([BUILD_DOC], [test x$doc = xtrue])
 
 AC_CONFIG_COMMANDS(
     summary,
     [echo ""
     echo "libcaldav will be compiled with these settings:"
     echo ""
-    echo -e "\tBuild caldav-test:\t$caldav"
-	echo -e "\tLibrary is linked:\t$link"
+    echo -e "\tBuild caldav-test:\t\t$caldav"
+    echo -e "\tBuild API documentation:\t$doc"
+	echo -e "\tLibrary is linked:\t\t$link"
 	echo ""
 	echo -e "Now run make to build the library"
 	echo ""
@@ -97,6 +112,7 @@ AC_CONFIG_COMMANDS(
 	echo -e "Email addresses can be found in the AUTHORS file."
     echo ""],
     [caldav=${caldav}
+     doc=${doc}
 	 if test $DYNAMIC -eq 1; then
 		link="Dynamic"
 	else

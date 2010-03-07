@@ -19,7 +19,6 @@ error() {
 if [ ! -z ${AUTORECONF} ]; then
 	echo "Using autoreconf to rebuild build system"
 	autoreconf --force --install --symlink
-	./configure $*
 else
 	echo "No autoreconf found. Using plain old tools to rebuild build system"
 	libtoolize --automake --force || error libtoolize
@@ -27,7 +26,7 @@ else
 	autoheader --force || error autoheader
 	automake --add-missing --force-missing --gnu || error automake
 	autoconf --force || error autoconf
-	./configure $*
 fi
+./configure --enable-maintainer-mode $*
 
 exit 0

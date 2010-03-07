@@ -315,39 +315,39 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = gnu
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = src test
-@DX_COND_doc_TRUE@@DX_COND_html_TRUE@DX_CLEAN_HTML = @DX_DOCDIR@/html
-@DX_COND_chm_TRUE@@DX_COND_doc_TRUE@DX_CLEAN_CHM = @DX_DOCDIR@/chm
-@DX_COND_chi_TRUE@@DX_COND_chm_TRUE@@DX_COND_doc_TRUE@DX_CLEAN_CHI = @DX_DOCDIR@/@PACKAGE@.chi
-@DX_COND_doc_TRUE@@DX_COND_man_TRUE@DX_CLEAN_MAN = @DX_DOCDIR@/man
-@DX_COND_doc_TRUE@@DX_COND_rtf_TRUE@DX_CLEAN_RTF = @DX_DOCDIR@/rtf
-@DX_COND_doc_TRUE@@DX_COND_xml_TRUE@DX_CLEAN_XML = @DX_DOCDIR@/xml
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@DX_CLEAN_PS = @DX_DOCDIR@/@PACKAGE@.ps
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@DX_PS_GOAL = doxygen-ps
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@DX_CLEAN_PDF = @DX_DOCDIR@/@PACKAGE@.pdf
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@DX_PDF_GOAL = doxygen-pdf
-@DX_COND_doc_TRUE@@DX_COND_latex_TRUE@DX_CLEAN_LATEX = @DX_DOCDIR@/latex
-@DX_COND_doc_TRUE@DX_CLEANFILES = \
-@DX_COND_doc_TRUE@    @DX_DOCDIR@/@PACKAGE@.tag \
-@DX_COND_doc_TRUE@    -r \
-@DX_COND_doc_TRUE@    $(DX_CLEAN_HTML) \
-@DX_COND_doc_TRUE@    $(DX_CLEAN_CHM) \
-@DX_COND_doc_TRUE@    $(DX_CLEAN_CHI) \
-@DX_COND_doc_TRUE@    $(DX_CLEAN_MAN) \
-@DX_COND_doc_TRUE@    $(DX_CLEAN_RTF) \
-@DX_COND_doc_TRUE@    $(DX_CLEAN_XML) \
-@DX_COND_doc_TRUE@    $(DX_CLEAN_PS) \
-@DX_COND_doc_TRUE@    $(DX_CLEAN_PDF) \
-@DX_COND_doc_TRUE@    $(DX_CLEAN_LATEX)
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_html_TRUE@DX_CLEAN_HTML = @DX_DOCDIR@/html
+@BUILD_DOC_TRUE@@DX_COND_chm_TRUE@@DX_COND_doc_TRUE@DX_CLEAN_CHM = @DX_DOCDIR@/chm
+@BUILD_DOC_TRUE@@DX_COND_chi_TRUE@@DX_COND_chm_TRUE@@DX_COND_doc_TRUE@DX_CLEAN_CHI = @DX_DOCDIR@/@PACKAGE@.chi
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_man_TRUE@DX_CLEAN_MAN = @DX_DOCDIR@/man
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_rtf_TRUE@DX_CLEAN_RTF = @DX_DOCDIR@/rtf
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_xml_TRUE@DX_CLEAN_XML = @DX_DOCDIR@/xml
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@DX_CLEAN_PS = @DX_DOCDIR@/@PACKAGE@.ps
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@DX_PS_GOAL = doxygen-ps
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@DX_CLEAN_PDF = @DX_DOCDIR@/@PACKAGE@.pdf
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@DX_PDF_GOAL = doxygen-pdf
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_latex_TRUE@DX_CLEAN_LATEX = @DX_DOCDIR@/latex
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@DX_CLEANFILES = \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@    @DX_DOCDIR@/@PACKAGE@.tag \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@    -r \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@    $(DX_CLEAN_HTML) \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@    $(DX_CLEAN_CHM) \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@    $(DX_CLEAN_CHI) \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@    $(DX_CLEAN_MAN) \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@    $(DX_CLEAN_RTF) \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@    $(DX_CLEAN_XML) \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@    $(DX_CLEAN_PS) \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@    $(DX_CLEAN_PDF) \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@    $(DX_CLEAN_LATEX)
 
-MOSTLYCLEANFILES = \
-				   $(DX_CLEANFILES) \
-				   doc
+@BUILD_DOC_TRUE@MOSTLYCLEANFILES = \
+@BUILD_DOC_TRUE@				   $(DX_CLEANFILES) \
+@BUILD_DOC_TRUE@				   doc
 
-doxydir = @DX_DOCDIR@
-dist_man3_MANS = $(doxydir)/man/man3/caldav.h.3
-libcaldav_apidoc_filedir = $(docdir)
-libcaldav_apidoc_file_DATA = \
-						  doc/libcaldav.pdf
+@BUILD_DOC_TRUE@doxydir = @DX_DOCDIR@
+@BUILD_DOC_TRUE@dist_man3_MANS = $(doxydir)/man/man3/caldav.h.3
+@BUILD_DOC_TRUE@libcaldav_apidoc_filedir = $(docdir)
+@BUILD_DOC_TRUE@libcaldav_apidoc_file_DATA = \
+@BUILD_DOC_TRUE@						  doc/libcaldav.pdf
 
 libcaldav_configdir = $(libdir)/pkgconfig
 libcaldav_config_DATA = libcaldav.pc
@@ -961,52 +961,52 @@ uninstall-man: uninstall-man3
 	uninstall-libcaldav_configDATA uninstall-man uninstall-man3
 
 
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@doxygen-ps: @DX_DOCDIR@/@PACKAGE@.ps
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@doxygen-ps: @DX_DOCDIR@/@PACKAGE@.ps
 
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@@DX_DOCDIR@/@PACKAGE@.ps: @DX_DOCDIR@/@PACKAGE@.tag
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	cd @DX_DOCDIR@/latex; \
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	rm -f *.aux *.toc *.idx *.ind *.ilg *.log *.out; \
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	$(DX_LATEX) refman.tex; \
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	$(MAKEINDEX_PATH) refman.idx; \
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	$(DX_LATEX) refman.tex; \
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	countdown=5; \
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	while $(DX_EGREP) 'Rerun (LaTeX|to get cross-references right)' \
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	                  refman.log > /dev/null 2>&1 \
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	   && test $$countdown -gt 0; do \
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	    $(DX_LATEX) refman.tex; \
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	    countdown=`expr $$countdown - 1`; \
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	done; \
-@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	$(DX_DVIPS) -o ../@PACKAGE@.ps refman.dvi
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@@DX_DOCDIR@/@PACKAGE@.ps: @DX_DOCDIR@/@PACKAGE@.tag
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	cd @DX_DOCDIR@/latex; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	rm -f *.aux *.toc *.idx *.ind *.ilg *.log *.out; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	$(DX_LATEX) refman.tex; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	$(MAKEINDEX_PATH) refman.idx; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	$(DX_LATEX) refman.tex; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	countdown=5; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	while $(DX_EGREP) 'Rerun (LaTeX|to get cross-references right)' \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	                  refman.log > /dev/null 2>&1 \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	   && test $$countdown -gt 0; do \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	    $(DX_LATEX) refman.tex; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	    countdown=`expr $$countdown - 1`; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	done; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_ps_TRUE@	$(DX_DVIPS) -o ../@PACKAGE@.ps refman.dvi
 
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@doxygen-pdf: @DX_DOCDIR@/@PACKAGE@.pdf
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@doxygen-pdf: @DX_DOCDIR@/@PACKAGE@.pdf
 
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@@DX_DOCDIR@/@PACKAGE@.pdf: @DX_DOCDIR@/@PACKAGE@.tag
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	cd @DX_DOCDIR@/latex; \
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	rm -f *.aux *.toc *.idx *.ind *.ilg *.log *.out; \
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	$(DX_PDFLATEX) refman.tex; \
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	$(DX_MAKEINDEX) refman.idx; \
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	$(DX_PDFLATEX) refman.tex; \
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	countdown=5; \
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	while $(DX_EGREP) 'Rerun (LaTeX|to get cross-references right)' \
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	                  refman.log > /dev/null 2>&1 \
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	   && test $$countdown -gt 0; do \
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	    $(DX_PDFLATEX) refman.tex; \
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	    countdown=`expr $$countdown - 1`; \
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	done; \
-@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	mv refman.pdf ../@PACKAGE@.pdf
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@@DX_DOCDIR@/@PACKAGE@.pdf: @DX_DOCDIR@/@PACKAGE@.tag
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	cd @DX_DOCDIR@/latex; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	rm -f *.aux *.toc *.idx *.ind *.ilg *.log *.out; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	$(DX_PDFLATEX) refman.tex; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	$(DX_MAKEINDEX) refman.idx; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	$(DX_PDFLATEX) refman.tex; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	countdown=5; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	while $(DX_EGREP) 'Rerun (LaTeX|to get cross-references right)' \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	                  refman.log > /dev/null 2>&1 \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	   && test $$countdown -gt 0; do \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	    $(DX_PDFLATEX) refman.tex; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	    countdown=`expr $$countdown - 1`; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	done; \
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_COND_pdf_TRUE@	mv refman.pdf ../@PACKAGE@.pdf
 
-@DX_COND_doc_TRUE@.PHONY: doxygen-run doxygen-doc $(DX_PS_GOAL) $(DX_PDF_GOAL)
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@.PHONY: doxygen-run doxygen-doc $(DX_PS_GOAL) $(DX_PDF_GOAL)
 
-@DX_COND_doc_TRUE@.INTERMEDIATE: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@.INTERMEDIATE: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
 
-@DX_COND_doc_TRUE@doxygen-run: @DX_DOCDIR@/@PACKAGE@.tag
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@doxygen-run: @DX_DOCDIR@/@PACKAGE@.tag
 
-@DX_COND_doc_TRUE@doxygen-doc: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@doxygen-doc: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
 
-@DX_COND_doc_TRUE@@DX_DOCDIR@/@PACKAGE@.tag: $(DX_CONFIG) $(pkginclude_HEADERS)
-@DX_COND_doc_TRUE@	rm -rf @DX_DOCDIR@
-@DX_COND_doc_TRUE@	$(DX_ENV) $(DX_DOXYGEN) $(srcdir)/$(DX_CONFIG)
-$(dist_man3_MANS): doxygen-doc
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@@DX_DOCDIR@/@PACKAGE@.tag: $(DX_CONFIG) $(pkginclude_HEADERS)
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@	rm -rf @DX_DOCDIR@
+@BUILD_DOC_TRUE@@DX_COND_doc_TRUE@	$(DX_ENV) $(DX_DOXYGEN) $(srcdir)/$(DX_CONFIG)
+@BUILD_DOC_TRUE@$(dist_man3_MANS): doxygen-doc
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

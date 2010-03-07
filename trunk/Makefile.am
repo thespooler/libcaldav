@@ -4,6 +4,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = src test
 
+if BUILD_DOC
 include aminclude.am
 
 MOSTLYCLEANFILES = \
@@ -17,6 +18,7 @@ $(dist_man3_MANS): doxygen-doc
 libcaldav_apidoc_filedir = $(docdir)
 libcaldav_apidoc_file_DATA = \
 						  doc/libcaldav.pdf
+endif
 
 libcaldav_configdir = $(libdir)/pkgconfig
 libcaldav_config_DATA = libcaldav.pc

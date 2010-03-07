@@ -44,6 +44,7 @@
 #define __CALDAV_H__
 
 #include <time.h>
+#include <glib.h>
 
 /* For debug purposes */
 /**
@@ -51,12 +52,14 @@
  * A struct used to set internal options in the library
  */
 struct debug_curl {
-  char trace_ascii; /** @var char trace_ascii
-					 * 0 or 1
-					 */
-  char debug;       /** @var char debug
-					 * 0 or 1
-					 */
+  char		trace_ascii; /** @var char trace_ascii
+					 	  * 0 or 1
+					 	  */
+  char		debug;       /** @var char debug
+					 	  * 0 or 1
+					 	  */
+  gboolean	verify_ssl_certificate;
+  gchar*	custom_cacert; 
 };
 
 /**

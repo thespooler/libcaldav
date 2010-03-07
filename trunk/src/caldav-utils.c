@@ -38,7 +38,7 @@
  * @param size
  * @param nohex
  */
-void dump(const char* text, FILE* stream, unsigned char* ptr, size_t size, char nohex) {
+void dump(const char* text, FILE* stream, char* ptr, size_t size, char nohex) {
 	size_t i;
 	size_t c;
 
@@ -86,7 +86,7 @@ void dump(const char* text, FILE* stream, unsigned char* ptr, size_t size, char 
  * @param userp
  * @return
  */
-int my_trace(CURL* handle, curl_infotype type,	unsigned char* data, size_t size, void* userp) {
+int my_trace(CURL* handle, curl_infotype type, char* data, size_t size, void* userp) {
 	struct config_data* config = (struct config_data *)userp;
 	const char* text;
 	(void)handle; /* prevent compiler warning */
@@ -196,6 +196,8 @@ void init_caldav_settings(caldav_settings* settings) {
 	settings->url = NULL;
 	settings->file = NULL;
 	settings->usehttps = FALSE;
+	settings->custom_cacert = NULL;
+	settings->verify_ssl_certificate = TRUE;
 	settings->debug = FALSE;
 	settings->trace_ascii = 1;
 	settings->ACTION = UNKNOWN;
@@ -224,6 +226,11 @@ void free_caldav_settings(caldav_settings* settings) {
 		g_free(settings->file);
 		settings->file = NULL;
 	}
+	if (settings->custom_cacert) {
+		g_free(settings->custom_cacert);
+		settings->custom_cacert = NULL;
+	}
+	settings->verify_ssl_certificate = TRUE;
 	settings->usehttps = FALSE;
 	settings->debug = FALSE;
 	settings->trace_ascii = 1;
