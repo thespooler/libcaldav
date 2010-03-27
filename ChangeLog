@@ -1,3 +1,11 @@
+libcaldav (0.4.2)
+  * Fix bug so that SSL specific settings are actually used.
+    Close bug 2971096.
+  * Fix bug so is-caldav and options are handled correct
+  * Applied help for new SSL settings to test application
+
+-- Michael Rasmussen <mir@datanom.net>  Sat, 27 Mar 2010 03:27:03 +0100
+
 libcaldav (0.4.1)
   * Fix bug so that SSL specific errors are handled properly.
     Close bug 2963143.
