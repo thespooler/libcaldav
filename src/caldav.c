@@ -392,7 +392,7 @@ int caldav_enabled_resource(const char* URL) {
 	gboolean res = test_caldav_enabled(curl, &settings);
 	free_caldav_settings(&settings);
 	curl_easy_cleanup(curl);
-	return (res) ? 1 : 0;
+	return (res && (error.code == 0 || error.code == 200)) ? 1 : 0;
 }
 
 /**
@@ -453,7 +453,7 @@ char** caldav_get_server_options(const char* URL) {
 	caldav_settings settings;
 	response server_options;
 	struct config_data data;
-	gchar** option_list;
+	gchar** option_list = NULL;
 	gchar** tmp;
 	gboolean res = FALSE;
 
@@ -486,14 +486,18 @@ char** caldav_get_server_options(const char* URL) {
 		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
 		g_free(userpwd);
 	}
+	settings.custom_cacert = options.custom_cacert;
+	settings.verify_ssl_certificate = options.verify_ssl_certificate;
 	res = caldav_getoptions(curl, &settings, &server_options, &error, FALSE);
-	free_caldav_settings(&settings);
-	curl_easy_cleanup(curl);
-	if (server_options.msg) {
-		option_list = g_strsplit(server_options.msg, ", ", 0);
-		tmp = &(*(option_list));
-		while (*tmp) {
-			g_strstrip(*tmp++);
+	if (res) {
+		free_caldav_settings(&settings);
+		curl_easy_cleanup(curl);
+		if (server_options.msg) {
+			option_list = g_strsplit(server_options.msg, ", ", 0);
+			tmp = &(*(option_list));
+			while (*tmp) {
+				g_strstrip(*tmp++);
+			}
 		}
 	}
 	return (option_list) ? option_list : NULL;

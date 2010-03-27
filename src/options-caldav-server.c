@@ -58,6 +58,12 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 	chunk.size = 0;    /* no data at this point */
 	headers.memory = NULL;
 	headers.size = 0;
+	if (settings->verify_ssl_certificate)
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
+	else
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
+	if (settings->custom_cacert)
+		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
 	/* send all data to this function  */
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
 	/* we pass our 'chunk' struct to the callback function */
@@ -88,6 +94,8 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 			long code;
 			res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 			error->code = code;
+			if (code == 200 && test)
+				enabled = TRUE;
 			error->str = g_strdup(headers.memory);
 		}
 	}

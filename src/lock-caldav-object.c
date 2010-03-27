@@ -85,6 +85,12 @@ gchar* caldav_lock_object(
 		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
 		g_free(userpwd);
 	}
+	if (settings->verify_ssl_certificate)
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
+	else
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
+	if (settings->custom_cacert)
+		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
 	/* send all data to this function  */
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -182,6 +188,12 @@ gboolean caldav_unlock_object(gchar* lock_token, gchar* URI,
 		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
 		g_free(userpwd);
 	}
+	if (settings->verify_ssl_certificate)
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
+	else
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
+	if (settings->custom_cacert)
+		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
 	/* send all data to this function  */
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);

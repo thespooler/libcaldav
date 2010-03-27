@@ -94,11 +94,13 @@ static char* usage[] = 	{
 "(at your option) any later version.\n"
 "\nusage:\n\tcaldav-test [Options] URL\n"
 "\n\tOptions:\n\t\t-a\taction [is-caldav|add|delete|modify|get|get-all|displayname|options]\n"
+"\t\t-c\tprovide custom cacert (path to cert)\n"
 "\t\t-d\tdebug (show request/response)\n"
 "\t\t-e\tend [yyyy/mm/dd]\n"
 "\t\t-f\tfile. Alternative is to use IO redirection (<)\n"
 "\t\t-p\tpassword\n\t\t-u\tusername\n"
 "\t\t-s\tstart [yyyy/mm/dd]\n"
+"\t\t-v\tdisable certificate verification\n"
 "\t\t-h|-?\tusage\n"
 };
 
