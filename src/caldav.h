@@ -48,10 +48,10 @@
 
 /* For debug purposes */
 /**
- * @struct debug_curl
+ * @typedef struct debug_curl
  * A struct used to set internal options in the library
  */
-struct debug_curl {
+typedef struct {
   char		trace_ascii; /** @var char trace_ascii
 					 	  * 0 or 1
 					 	  */
@@ -60,7 +60,7 @@ struct debug_curl {
 					 	  */
   gboolean	verify_ssl_certificate;
   gchar*	custom_cacert; 
-};
+} debug_curl;
 
 /**
  * @typedef struct _caldav_error caldav_error
@@ -81,6 +81,15 @@ struct _caldav_error {
 				* For storing human readable error message
 				*/
 };
+
+/**
+ * @typedef struct runtime_info
+ * Pointer to a runtime structure holding debug and error information
+ */
+typedef struct {
+    caldav_error*   error;
+    debug_curl*	    options;
+} runtime_info;
 
 /* CalDAV is defined in RFC4791 */
 
@@ -150,9 +159,12 @@ typedef enum {
  * @param URL Defines CalDAV resource. Receiver is responsible for freeing
  * the memory. [http://][username[:password]@]host[:port]/url-path.
  * See (RFC1738).
+ * @param info Pointer to a runtime_info structure. @see runtime_info
  * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
  */
-CALDAV_RESPONSE caldav_add_object(const char* object, const char* URL);
+CALDAV_RESPONSE caldav_add_object(const char* object,
+				  const char* URL,
+				  runtime_info* info);
 
 /**
  * Function for deleting an event.
@@ -161,9 +173,12 @@ CALDAV_RESPONSE caldav_add_object(const char* object, const char* URL);
  * @param URL Defines CalDAV resource. Receiver is responsible for freeing
  * the memory. [http://][username[:password]@]host[:port]/url-path.
  * See (RFC1738).
+ * @param info Pointer to a runtime_info structure. @see runtime_info
  * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
  */
-CALDAV_RESPONSE caldav_delete_object(const char* object, const char* URL);
+CALDAV_RESPONSE caldav_delete_object(const char* object,
+				     const char* URL,
+				     runtime_info* info);
 
 /**
  * Function for modifying an event.
@@ -172,9 +187,12 @@ CALDAV_RESPONSE caldav_delete_object(const char* object, const char* URL);
  * @param URL Defines CalDAV resource. Receiver is responsible for freeing
  * the memory. [http://][username[:password]@]host[:port]/url-path.
  * See (RFC1738).
+ * @param info Pointer to a runtime_info structure. @see runtime_info
  * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
  */
-CALDAV_RESPONSE caldav_modify_object(const char* object, const char* URL);
+CALDAV_RESPONSE caldav_modify_object(const char* object,
+				     const char* URL,
+				     runtime_info* info);
 
 /**
  * Function for getting a collection of events determined by time range.
@@ -185,10 +203,14 @@ CALDAV_RESPONSE caldav_modify_object(const char* object, const char* URL);
  * @param URL Defines CalDAV resource. Receiver is responsible for freeing
  * the memory. [http://][username[:password]@]host[:port]/url-path.
  * See (RFC1738).
+ * @param info Pointer to a runtime_info structure. @see runtime_info
  * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
  */
-CALDAV_RESPONSE caldav_get_object(
-	response* result, time_t start, time_t end, const char* URL);
+CALDAV_RESPONSE caldav_get_object(response* result,
+				  time_t start,
+				  time_t end,
+				  const char* URL,
+				  runtime_info* info);
 
 /**
  * Function for getting all events from the collection.
@@ -197,9 +219,12 @@ CALDAV_RESPONSE caldav_get_object(
  * @param URL Defines CalDAV resource. Receiver is responsible for freeing
  * the memory. [http://][username[:password]@]host[:port]/url-path.
  * See (RFC1738).
+ * @param info Pointer to a runtime_info structure. @see runtime_info
  * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
  */
-CALDAV_RESPONSE caldav_getall_object(response* result, const char* URL);
+CALDAV_RESPONSE caldav_getall_object(response* result,
+				     const char* URL,
+				     runtime_info* info);
 
 /**
  * Function for getting the stored display name for the collection.
@@ -208,21 +233,26 @@ CALDAV_RESPONSE caldav_getall_object(response* result, const char* URL);
  * @param URL Defines CalDAV resource. Receiver is responsible for freeing
  * the memory. [http://][username[:password]@]host[:port]/url-path.
  * See (RFC1738).
+ * @param info Pointer to a runtime_info structure. @see runtime_info
  * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
  */
-CALDAV_RESPONSE caldav_get_displayname(response* result, const char* URL);
+CALDAV_RESPONSE caldav_get_displayname(response* result,
+				       const char* URL,
+				       runtime_info* info);
 
 /**
  * Function to test wether a calendar resource is CalDAV enabled or not.
  * @param URL Defines CalDAV resource. Receiver is responsible for
  * freeing the memory. [http://][username[:password]@]host[:port]/url-path.
  * See (RFC1738).
+ * @param info Pointer to a runtime_info structure. @see runtime_info
  * @result 0 (zero) means no CalDAV support, otherwise CalDAV support
  * detechted.
  */
-int caldav_enabled_resource(const char* URL);
+int caldav_enabled_resource(const char* URL, runtime_info* info);
 
 /** 
+ * @deprecated Always returns an initialized empty caldav_error
  * Function to call in case of errors.
  * Caller provides a pointer to a local caldav_error structure.
  * Caldav_get_error will initialize pointer if NULL.
@@ -245,18 +275,28 @@ void caldav_free_error(caldav_error* lib_error);
 /* Setting various options in library */
 
 /**
+ * @deprecated Does nothing
  * Function which supports sending various options inside the library.
  * @param curl_options A struct debug_curl. See debug_curl.
  */
-void caldav_set_options(struct debug_curl curl_options);
+void caldav_set_options(debug_curl curl_options);
 
 /**
  * Function to call to get a list of supported CalDAV options for a server
  * @param URL Defines CalDAV resource. Receiver is responsible for
  * freeing the memory. [http://][username[:password]@]host[:port]/url-path.
  * See (RFC1738).
+ * @param info Pointer to a runtime_info structure. @see runtime_info
  * @result A list of available options or NULL in case of any error.
  */
-char** caldav_get_server_options(const char* URL);
+char** caldav_get_server_options(const char* URL, runtime_info* info);
+
+/**
+ * Function for freeing memory for a previous initialization of an info
+ * structure
+ * @param info Address to a pointer to a runtime_info structure. @see 
+ * runtime_info
+ */
+void caldav_free_runtime_info(runtime_info** info);
 
 #endif

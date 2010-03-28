@@ -35,9 +35,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct debug_curl debug_options;
-static debug_options options = {1,0,1, NULL};
-static caldav_error error;
+static void init_runtime(runtime_info* info) {
+    if (! info)
+	return;
+    if (! info->error)
+	info->error = g_new0(caldav_error, 1);
+    if (! info->options) {
+	info->options = g_new0(debug_curl, 1);
+	info->options->trace_ascii = 1;
+	info->options->debug = 0;
+	info->options->verify_ssl_certificate = TRUE;
+	info->options->custom_cacert = NULL;
+    }
+}
 
 /**
  * @param curl An instance of libcurl.
@@ -47,10 +57,10 @@ static caldav_error error;
  * @return FALSE (zero) mens URL does not reference a CalDAV calendar
  * resource. TRUE if the URL does reference a CalDAV calendar resource.
  */
-static gboolean test_caldav_enabled(CURL* curl, caldav_settings* settings) {
-/*	error = (caldav_error *) malloc(sizeof(struct _caldav_error));
-	memset(error, '\0', sizeof(struct _caldav_error));*/
-	return caldav_getoptions(curl, settings, NULL, &error, TRUE);
+static gboolean test_caldav_enabled(CURL* curl,
+				    caldav_settings* settings,
+				    caldav_error* error) {
+	return caldav_getoptions(curl, settings, NULL, error, TRUE);
 }
 
 /* 
@@ -58,13 +68,16 @@ static gboolean test_caldav_enabled(CURL* curl, caldav_settings* settings) {
  * @return TRUE if there was an error. Error can be in libcurl, in libcaldav,
  * or an error related to the CalDAV protocol.
  */
-static gboolean make_caldav_call(caldav_settings* settings) {
+static gboolean make_caldav_call(caldav_settings* settings,
+				 runtime_info* info) {
 	CURL* curl;
 	gboolean result = FALSE;
 
+	g_return_val_if_fail(info != NULL, TRUE);
+
 	curl = curl_easy_init();
 	if (!curl) {
-		error.str = g_strdup("Could not initialize libcurl");
+		info->error->str = g_strdup("Could not initialize libcurl");
 		settings->file = NULL;
 		return TRUE;
 	}
@@ -78,27 +91,27 @@ static gboolean make_caldav_call(caldav_settings* settings) {
 		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
 		g_free(userpwd);
 	}
-	settings->custom_cacert = options.custom_cacert;
-	settings->verify_ssl_certificate = options.verify_ssl_certificate;
+	settings->custom_cacert = info->options->custom_cacert;
+	settings->verify_ssl_certificate = info->options->verify_ssl_certificate;
 	if (settings->verify_ssl_certificate)
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
 	else
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
 	if (settings->custom_cacert)
 		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
-	if (!test_caldav_enabled(curl, settings)) {
+	if (!test_caldav_enabled(curl, settings, info->error)) {
 		settings->file = NULL;
 		curl_easy_cleanup(curl);
 		return TRUE;
 	}
 	curl_easy_cleanup(curl);
 	switch (settings->ACTION) {
-		case GETALL: result = caldav_getall(settings, &error); break;
-		case GET: result = caldav_getrange(settings, &error); break;
-		case ADD: result = caldav_add(settings, &error); break;
-		case DELETE: result = caldav_delete(settings, &error); break;
-		case MODIFY: result = caldav_modify(settings, &error); break;
-		case GETCALNAME: result = caldav_getname(settings, &error); break;
+		case GETALL: result = caldav_getall(settings, info->error); break;
+		case GET: result = caldav_getrange(settings, info->error); break;
+		case ADD: result = caldav_add(settings, info->error); break;
+		case DELETE: result = caldav_delete(settings, info->error); break;
+		case MODIFY: result = caldav_modify(settings, info->error); break;
+		case GETCALNAME: result = caldav_getname(settings, info->error); break;
 		default: break;
 	}
 	return result;
@@ -113,23 +126,28 @@ static gboolean make_caldav_call(caldav_settings* settings) {
  * See (RFC1738).
  * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
  */
-CALDAV_RESPONSE caldav_add_object(const char* object, const char* URL) {
+CALDAV_RESPONSE caldav_add_object(const char* object,
+				  const char* URL,
+				  runtime_info* info) {
 	caldav_settings settings;
 	CALDAV_RESPONSE caldav_response;
 
+	g_return_val_if_fail(info != NULL, TRUE);
+
+	init_runtime(info);
 	init_caldav_settings(&settings);
 	settings.file = g_strdup(object);
 	settings.ACTION = ADD;
-	if (options.debug)
+	if (info->options->debug)
 		settings.debug = TRUE;
 	else
 		settings.debug = FALSE;
-	if (options.trace_ascii)
+	if (info->options->trace_ascii)
 		settings.trace_ascii = 1;
 	else
 		settings.trace_ascii = 0;
 	parse_url(&settings, URL);
-	gboolean res = make_caldav_call(&settings);
+	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
 		caldav_response = CONFLICT;
 	}
@@ -149,23 +167,28 @@ CALDAV_RESPONSE caldav_add_object(const char* object, const char* URL) {
  * See (RFC1738).
  * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
  */
-CALDAV_RESPONSE caldav_delete_object(const char* object, const char* URL) {
+CALDAV_RESPONSE caldav_delete_object(const char* object,
+				     const char* URL,
+				     runtime_info* info) {
 	caldav_settings settings;
 	CALDAV_RESPONSE caldav_response;
 
+	g_return_val_if_fail(info != NULL, TRUE);
+
+	init_runtime(info);
 	init_caldav_settings(&settings);
 	settings.file = g_strdup(object);
 	settings.ACTION = DELETE;
-	if (options.debug)
+	if (info->options->debug)
 		settings.debug = TRUE;
 	else
 		settings.debug = FALSE;
-	if (options.trace_ascii)
+	if (info->options->trace_ascii)
 		settings.trace_ascii = 1;
 	else
 		settings.trace_ascii = 0;
 	parse_url(&settings, URL);
-	gboolean res = make_caldav_call(&settings);
+	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
 		caldav_response = CONFLICT;
 	}
@@ -185,23 +208,28 @@ CALDAV_RESPONSE caldav_delete_object(const char* object, const char* URL) {
  * See (RFC1738).
  * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
  */
-CALDAV_RESPONSE caldav_modify_object(const char* object, const char* URL) {
+CALDAV_RESPONSE caldav_modify_object(const char* object,
+				     const char* URL,
+				     runtime_info* info) {
 	caldav_settings settings;
 	CALDAV_RESPONSE caldav_response;
 
+	g_return_val_if_fail(info != NULL, TRUE);
+
+	init_runtime(info);
 	init_caldav_settings(&settings);
 	settings.file = g_strdup(object);
 	settings.ACTION = MODIFY;
-	if (options.debug)
+	if (info->options->debug)
 		settings.debug = TRUE;
 	else
 		settings.debug = FALSE;
-	if (options.trace_ascii)
+	if (info->options->trace_ascii)
 		settings.trace_ascii = 1;
 	else
 		settings.trace_ascii = 0;
 	parse_url(&settings, URL);
-	gboolean res = make_caldav_call(&settings);
+	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
 		caldav_response = CONFLICT;
 	}
@@ -225,11 +253,17 @@ CALDAV_RESPONSE caldav_modify_object(const char* object, const char* URL) {
  * See (RFC1738).
  * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
  */
-CALDAV_RESPONSE caldav_get_object(
-		response *result, time_t start, time_t end, const char* URL) {
+CALDAV_RESPONSE caldav_get_object(response *result,
+				  time_t start,
+				  time_t end,
+				  const char* URL,
+				  runtime_info* info) {
 	caldav_settings settings;
 	CALDAV_RESPONSE caldav_response;
 
+	g_return_val_if_fail(info != NULL, TRUE);
+
+	init_runtime(info);
 	if (!result) {
 		result = malloc(sizeof(response *));
 		memset(result, '\0', sizeof(response *));
@@ -238,16 +272,16 @@ CALDAV_RESPONSE caldav_get_object(
 	settings.ACTION = GET;
 	settings.start = start;
 	settings.end = end;
-	if (options.debug)
+	if (info->options->debug)
 		settings.debug = TRUE;
 	else
 		settings.debug = FALSE;
-	if (options.trace_ascii)
+	if (info->options->trace_ascii)
 		settings.trace_ascii = 1;
 	else
 		settings.trace_ascii = 0;
 	parse_url(&settings, URL);
-	gboolean res = make_caldav_call(&settings);
+	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
 		result->msg = NULL;
 		caldav_response = FORBIDDEN;
@@ -269,26 +303,31 @@ CALDAV_RESPONSE caldav_get_object(
  * See (RFC1738).
  * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
  */
-CALDAV_RESPONSE caldav_getall_object(response* result, const char* URL) {
+CALDAV_RESPONSE caldav_getall_object(response* result,
+				     const char* URL,
+				     runtime_info* info) {
 	caldav_settings settings;
 	CALDAV_RESPONSE caldav_response;
 
+	g_return_val_if_fail(info != NULL, TRUE);
+
+	init_runtime(info);
 	if (!result) {
 		result = malloc(sizeof(response *));
 		memset(result, '\0', sizeof(response *));
 	}
 	init_caldav_settings(&settings);
 	settings.ACTION = GETALL;
-	if (options.debug)
+	if (info->options->debug)
 		settings.debug = TRUE;
 	else
 		settings.debug = FALSE;
-	if (options.trace_ascii)
+	if (info->options->trace_ascii)
 		settings.trace_ascii = 1;
 	else
 		settings.trace_ascii = 0;
 	parse_url(&settings, URL);
-	gboolean res = make_caldav_call(&settings);
+	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
 		result->msg = NULL;
 		caldav_response = FORBIDDEN;
@@ -310,26 +349,31 @@ CALDAV_RESPONSE caldav_getall_object(response* result, const char* URL) {
  * See (RFC1738).
  * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
  */
-CALDAV_RESPONSE caldav_get_displayname(response* result, const char* URL) {
+CALDAV_RESPONSE caldav_get_displayname(response* result,
+				       const char* URL,
+				       runtime_info* info) {
 	caldav_settings settings;
 	CALDAV_RESPONSE caldav_response;
 
+	g_return_val_if_fail(info != NULL, TRUE);
+
+	init_runtime(info);
 	if (!result) {
 		result = malloc(sizeof(response *));
 		memset(result, '\0', sizeof(response *));
 	}
 	init_caldav_settings(&settings);
 	settings.ACTION = GETCALNAME;
-	if (options.debug)
+	if (info->options->debug)
 		settings.debug = TRUE;
 	else
 		settings.debug = FALSE;
-	if (options.trace_ascii)
+	if (info->options->trace_ascii)
 		settings.trace_ascii = 1;
 	else
 		settings.trace_ascii = 0;
 	parse_url(&settings, URL);
-	gboolean res = make_caldav_call(&settings);
+	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
 		result->msg = NULL;
 		caldav_response = FORBIDDEN;
@@ -350,13 +394,16 @@ CALDAV_RESPONSE caldav_get_displayname(response* result, const char* URL) {
  * @result 0 (zero) means no CalDAV support, otherwise CalDAV support
  * detechted.
  */
-int caldav_enabled_resource(const char* URL) {
+int caldav_enabled_resource(const char* URL, runtime_info* info) {
 	CURL* curl;
 	caldav_settings settings;
 	struct config_data data;
 
+	g_return_val_if_fail(info != NULL, TRUE);
+
+	init_runtime(info);
 	init_caldav_settings(&settings);
-	if (options.trace_ascii)
+	if (info->options->trace_ascii)
 		data.trace_ascii = 1;
 	else
 		data.trace_ascii = 0;
@@ -366,13 +413,13 @@ int caldav_enabled_resource(const char* URL) {
 		settings.file = NULL;
 		return 0;
 	}
-	if (options.debug) {
+	if (info->options->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
 		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
-	settings.custom_cacert = options.custom_cacert;
-	settings.verify_ssl_certificate = options.verify_ssl_certificate;
+	settings.custom_cacert = info->options->custom_cacert;
+	settings.verify_ssl_certificate = info->options->verify_ssl_certificate;
 	if (settings.verify_ssl_certificate)
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
 	else
@@ -389,18 +436,17 @@ int caldav_enabled_resource(const char* URL) {
 		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
 		g_free(userpwd);
 	}
-	gboolean res = test_caldav_enabled(curl, &settings);
+	gboolean res = test_caldav_enabled(curl, &settings, info->error);
 	free_caldav_settings(&settings);
 	curl_easy_cleanup(curl);
-	return (res && (error.code == 0 || error.code == 200)) ? 1 : 0;
+	return (res && (info->error->code == 0 || info->error->code == 200)) ? 1 : 0;
 }
 
 /**
  * Function which supports sending various options inside the library.
  * @param curl_options A struct debug_curl. See debug_curl.
  */
-void caldav_set_options(struct debug_curl curl_options) {
-	options = curl_options;
+void caldav_set_options(debug_curl curl_options) {
 }
 
 /** 
@@ -415,16 +461,8 @@ void caldav_set_options(struct debug_curl curl_options) {
  */
 caldav_error* caldav_get_error(caldav_error* lib_error) {
 	if (!lib_error) {
-		lib_error = (caldav_error *) malloc(sizeof(struct _caldav_error));
-		memset(lib_error, '\0', sizeof(struct _caldav_error));
+		lib_error = g_new0(caldav_error, 1);
 	}
-	lib_error->code = error.code;
-	if (error.str) {
-		lib_error->str = (char *) malloc(strlen(error.str) + 1);
-		memset(lib_error->str, '\0', strlen(error.str) + 1);
-		memcpy(lib_error->str, error.str, strlen(error.str));
-	}
-	/*free_static_caldav_error();*/
 	return lib_error;
 }
 
@@ -436,8 +474,8 @@ caldav_error* caldav_get_error(caldav_error* lib_error) {
  */
 void caldav_free_error(caldav_error* lib_error) {
 	if (lib_error->str)
-		free(lib_error->str);
-	free(lib_error);
+		g_free(lib_error->str);
+	g_free(lib_error);
 	lib_error = NULL;
 }
 
@@ -448,7 +486,7 @@ void caldav_free_error(caldav_error* lib_error) {
  * See (RFC1738).
  * @result A list of available options or NULL in case of any error.
  */
-char** caldav_get_server_options(const char* URL) {
+char** caldav_get_server_options(const char* URL, runtime_info* info) {
 	CURL* curl;
 	caldav_settings settings;
 	response server_options;
@@ -457,11 +495,12 @@ char** caldav_get_server_options(const char* URL) {
 	gchar** tmp;
 	gboolean res = FALSE;
 
+	g_return_val_if_fail(info != NULL, NULL);
+
+	init_runtime(info);
 	tmp = option_list = NULL;
-	/*error = (caldav_error *) malloc(sizeof(struct _caldav_error));
-	memset(error, '\0', sizeof(struct _caldav_error));*/
 	init_caldav_settings(&settings);
-	if (options.trace_ascii)
+	if (info->options->trace_ascii)
 		data.trace_ascii = 1;
 	else
 		data.trace_ascii = 0;
@@ -471,7 +510,7 @@ char** caldav_get_server_options(const char* URL) {
 		settings.file = NULL;
 		return NULL;
 	}
-	if (options.debug) {
+	if (info->options->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
 		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
@@ -486,12 +525,10 @@ char** caldav_get_server_options(const char* URL) {
 		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
 		g_free(userpwd);
 	}
-	settings.custom_cacert = options.custom_cacert;
-	settings.verify_ssl_certificate = options.verify_ssl_certificate;
-	res = caldav_getoptions(curl, &settings, &server_options, &error, FALSE);
+	settings.custom_cacert = info->options->custom_cacert;
+	settings.verify_ssl_certificate = info->options->verify_ssl_certificate;
+	res = caldav_getoptions(curl, &settings, &server_options, info->error, FALSE);
 	if (res) {
-		free_caldav_settings(&settings);
-		curl_easy_cleanup(curl);
 		if (server_options.msg) {
 			option_list = g_strsplit(server_options.msg, ", ", 0);
 			tmp = &(*(option_list));
@@ -500,5 +537,29 @@ char** caldav_get_server_options(const char* URL) {
 			}
 		}
 	}
+	free_caldav_settings(&settings);
+	curl_easy_cleanup(curl);
 	return (option_list) ? option_list : NULL;
+}
+
+void caldav_free_runtime_info(runtime_info** info) {
+    runtime_info* ri;
+
+    if (*info) {
+	ri = *info;
+	if (ri->error) {
+	    if (ri->error->str)
+		g_free(ri->error->str);
+	    g_free(ri->error);
+	    ri->error = NULL;
+	}
+	if (ri->options) {
+	    if (ri->options->custom_cacert)
+		g_free(ri->options->custom_cacert);
+	    g_free(ri->options);
+	    ri->options = NULL;
+	}
+	g_free(ri);
+	*info = ri = NULL;
+    }
 }
