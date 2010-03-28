@@ -232,7 +232,7 @@ AUTOMAKE_OPTIONS = gnu
 @BUILD_CALDAV_TRUE@	   -I$(top_srcdir)
 
 @BUILD_CALDAV_TRUE@caldav_test_SOURCES = \
-@BUILD_CALDAV_TRUE@		      caldav-test.c
+@BUILD_CALDAV_TRUE@		      caldav-test.c 
 
 @BUILD_CALDAV_TRUE@noinst_HEADERS = 
 @BUILD_CALDAV_TRUE@caldav_test_LDFLAGS = \

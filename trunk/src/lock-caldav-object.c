@@ -252,7 +252,13 @@ gboolean caldav_unlock_object(gchar* lock_token, gchar* URI,
 gboolean caldav_lock_support(caldav_settings* settings, caldav_error* error) {
 	gboolean found = FALSE;
 	gchar* url = NULL;
-    gchar* mystr = NULL;
+	gchar* mystr = NULL;
+	runtime_info* info;
+	
+	info = g_new0(runtime_info, 1);
+	info->options = g_new0(debug_curl, 1);
+	info->options->verify_ssl_certificate = settings->verify_ssl_certificate;
+	info->options->custom_cacert = g_strdup(settings->custom_cacert);
 	if (settings->usehttps) {
 		mystr =  g_strdup("https://");
 	} else {
@@ -271,7 +277,8 @@ gboolean caldav_lock_support(caldav_settings* settings, caldav_error* error) {
 	else {
 		url = g_strdup_printf("%s%s", mystr, settings->url);
 	}
-	gchar** options = caldav_get_server_options(url);
+	gchar** options = caldav_get_server_options(url, info);
+	caldav_free_runtime_info(&info);
 	while (*options) {
 		if (strcmp(*options++, "LOCK") == 0) {
 			found = TRUE;

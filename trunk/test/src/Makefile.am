@@ -9,7 +9,7 @@ INCLUDES = \
 bin_PROGRAMS = caldav-test
 
 caldav_test_SOURCES = \
-		      caldav-test.c
+		      caldav-test.c 
 
 noinst_HEADERS =
 

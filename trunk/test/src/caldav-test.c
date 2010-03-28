@@ -119,9 +119,11 @@ int main(int argc, char **argv) {
 	CALDAV_RESPONSE res = UNKNOWN;
 	gchar* input = NULL;
 	char** options = NULL;
-	struct debug_curl opt = {1,0,1, NULL};
+	runtime_info* opt;
 	gchar* custom_cacert = NULL;
 
+	opt = g_new0(runtime_info, 1);
+	opt->options = g_new0(debug_curl, 1);
 	while ((c = getopt(argc, argv, "a:c:de:f:hp:s:u:v?")) != -1) {
 		switch (c) {
 			case 'h':
@@ -237,30 +239,30 @@ int main(int argc, char **argv) {
 	}
 	url = make_url(username, password, argv[optind]);
 	if (debug) {
-		opt.debug = 1;
-		opt.trace_ascii = 1;
+		opt->options->debug = 1;
+		opt->options->trace_ascii = 1;
 	}
-	opt.verify_ssl_certificate = verify_ssl_certificate;
-	opt.custom_cacert = custom_cacert;
-	caldav_set_options(opt);
+	opt->options->verify_ssl_certificate = verify_ssl_certificate;
+	opt->options->custom_cacert = g_strdup(custom_cacert);
+	g_free(custom_cacert);
 	result.msg = NULL;
 	switch (ACTION) {
-		case GETALL: res = caldav_getall_object(&result, url); break;
+		case GETALL: res = caldav_getall_object(&result, url, opt); break;
 		case GET: res = caldav_get_object(
-			&result, make_time_t(start), make_time_t(end), url); break;
-		case ADD: res = caldav_add_object(input, url); break;
-		case DELETE: res = caldav_delete_object(input, url); break;
-		case MODIFY: res = caldav_modify_object(input, url); break;
-		case GETCALNAME: res = caldav_get_displayname(&result, url); break;
+			&result, make_time_t(start), make_time_t(end), url, opt); break;
+		case ADD: res = caldav_add_object(input, url, opt); break;
+		case DELETE: res = caldav_delete_object(input, url, opt); break;
+		case MODIFY: res = caldav_modify_object(input, url, opt); break;
+		case GETCALNAME: res = caldav_get_displayname(&result, url, opt); break;
 		case ISCALDAV:
-					res = caldav_enabled_resource(url);
+					res = caldav_enabled_resource(url, opt);
 					if (res)
 						res = OK;
 					else
 						res = FORBIDDEN;
 					break;
 		case OPTIONS:
-					options = caldav_get_server_options(url);
+					options = caldav_get_server_options(url, opt);
 					if (options)
 						res = OK;
 					else
@@ -269,10 +271,8 @@ int main(int argc, char **argv) {
 		default: break;
 	}
 	if (res != OK) {
-		caldav_error* error = NULL;
-		error = caldav_get_error(error);
-		fprintf(stderr, "Error\nCode: %ld\n%s\n", error->code, error->str);
-		caldav_free_error(error);
+		fprintf(stderr, "Error\nCode: %ld\n%s\n", opt->error->code, opt->error->str);
+		caldav_free_runtime_info(&opt);
 		return 1;
 	}
 	if (result.msg && ACTION != OPTIONS) {
@@ -296,5 +296,6 @@ int main(int argc, char **argv) {
 		fprintf(stdout, "empty collection\n");
 	}
 	fprintf(stdout, "OK\n");
+	caldav_free_runtime_info(&opt);
 	return 0;
 }
