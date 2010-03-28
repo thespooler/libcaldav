@@ -529,15 +529,18 @@ gchar* get_url(gchar* text) {
  * @return element
  */
 gchar* get_tag(const gchar* tag, gchar* text) {
-	gchar* pos;
+	gchar *pos;
 	gchar* res = NULL;
 	gchar* the_tag = NULL;
 
 	the_tag = g_strdup_printf("<%s>", tag);
-	if ((pos = strstr(text, the_tag)) == NULL)
+	if ((pos = strstr(text, the_tag)) == NULL) {
+		g_free(the_tag);
 		return res;
+	}
 	pos = &(*(pos + strlen(the_tag)));
 	res = g_strndup(pos, strlen(pos) - strlen(strchr(pos, '<')));
+	g_free(the_tag);
 	return res;	
 }
 
@@ -569,12 +572,13 @@ gchar* get_host(gchar* url) {
 }
 
 /**
- * rebuild a ral URL with https if needed from the settings
+ * rebuild a raw URL with https if needed from the settings
  * @param settings caldav_settings
+ * @param uri URI to use instead of base
  * @return URL
  */
 
-gchar* rebuild_url(caldav_settings* settings){
+gchar* rebuild_url(caldav_settings* settings, gchar* uri){
     gchar* url = NULL;
     gchar* mystr = NULL;
 	if (settings->usehttps) {
@@ -582,19 +586,10 @@ gchar* rebuild_url(caldav_settings* settings){
 	} else {
 		mystr = "http://";
 	}
-	/* XXX We probably don't need to pass username and password in the URL as
-	 * they have to be set with the curl-way */
-/*
-    if (settings->username && settings->password) {
-        url = g_strdup_printf("%s%s:%s@%s",
-                mystr,settings->username, settings->password, settings->url);
-    }
-    else if (settings->username) {
-        url = g_strdup_printf("%s%s@%s",
-                mystr,settings->username, settings->url);
-    }
-    else {*/
-        url = g_strdup_printf("%s%s", mystr,settings->url);
-/*    }*/
+	if (uri)
+		url = g_strdup_printf("%s%s", mystr, uri);
+	else
+    	url = g_strdup_printf("%s%s", mystr,settings->url);
+
 	return url;
 }

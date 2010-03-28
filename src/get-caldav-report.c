@@ -145,7 +145,7 @@ gboolean caldav_getall(caldav_settings* settings, caldav_error* error) {
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
 	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "REPORT");
-	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings));
+	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, NULL));
 	res = curl_easy_perform(curl);
 	if (res != 0) {
 		error->code = -1;
@@ -245,7 +245,7 @@ gboolean caldav_getrange(caldav_settings* settings, caldav_error* error) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
-	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings));
+	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, NULL));
 	request = g_strdup_printf(
 		"%s\r\n<C:time-range start=\"%s\"\r\n end=\"%s\"/>\r\n%s",
 			getrange_request_head, get_caldav_datetime(&settings->start),

@@ -126,7 +126,7 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
-	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings));
+	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, NULL));
 	gchar* file = g_strdup(settings->file);
 	if ((uid = get_response_header("uid", file, FALSE)) == NULL) {
 		g_free(file);
@@ -207,6 +207,15 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 									"If: (%s)", lock_token));
 					}
 					/*
+					 * If error code is 423 (Resource is LOCKED) bail out
+					 */
+					else if (lock_error.code == 423) {
+						error->code = lock_error.code;
+						error->str = g_strdup(lock_error.str);
+						g_free(url);
+						return TRUE;
+					}
+					/*
 					 * If error code is 501 (Not implemented) we continue
 					 * hoping for the best.
 					 */
@@ -219,7 +228,7 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 				}
 				if (! LOCKSUPPORT || (LOCKSUPPORT && lock_token)) {
 					curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
-					curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings)); /* FIXME to verify*/
+					curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, url)); /* FIXME to verify*/
 					curl_easy_setopt(curl, CURLOPT_POSTFIELDS, NULL);
 					curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, 0);
 					curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE");

@@ -127,7 +127,7 @@ gboolean caldav_modify(caldav_settings* settings, caldav_error* error) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
-	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings));
+	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, NULL));
 	gchar* file = g_strdup(settings->file);
 	if ((uid = get_response_header("uid", file, FALSE)) == NULL) {
 		g_free(file);
@@ -220,7 +220,7 @@ gboolean caldav_modify(caldav_settings* settings, caldav_error* error) {
 				}
 				if (! LOCKSUPPORT || (LOCKSUPPORT && lock_token)) {
 					curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
-					curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings));
+					curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, url));
 					curl_easy_setopt(curl, CURLOPT_POSTFIELDS, settings->file);
 					curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, 
 								strlen(settings->file));

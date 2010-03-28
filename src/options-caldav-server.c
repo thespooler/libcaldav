@@ -77,7 +77,7 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, (char *) &error_buf);
 	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "OPTIONS");
-	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings));
+	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, NULL));
 	res = curl_easy_perform(curl);
 	if (res == 0) {
 		gchar* head;

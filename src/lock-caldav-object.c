@@ -125,8 +125,16 @@ gchar* caldav_lock_object(
 		long code;
 		res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 		if (code != 200) {
-			error->code = code;
-			error->str = g_strdup(chunk.memory);
+			gchar* status = get_tag("status", chunk.memory);
+			if (strstr(status, "423") != NULL) {
+				error->code = 423;
+				error->str = g_strdup(status);
+			}
+			else {
+				error->code = code;
+				error->str = g_strdup(chunk.memory);
+			}
+			g_free(status);
 		}
 		else {
 			lock_token = get_response_header(
