@@ -166,6 +166,7 @@ gboolean caldav_getall(caldav_settings* settings, caldav_error* error) {
 			report = parse_caldav_report(
 						chunk.memory, "calendar-data", "VEVENT");
 			settings->file = g_strdup(report);
+			g_free(report);
 		}
 	}
 	if (chunk.memory)
@@ -265,6 +266,7 @@ gboolean caldav_getrange(caldav_settings* settings, caldav_error* error) {
 		gchar* report;
 		report = parse_caldav_report(chunk.memory, "calendar-data", "VEVENT");
 		settings->file = g_strdup(report);
+		g_free(report);
 	}
 	g_free(request);
 	if (chunk.memory)

@@ -148,6 +148,7 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 	curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, strlen(search));
 	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "REPORT");
 	res = curl_easy_perform(curl);
+	g_free(search);
 	curl_slist_free_all(http_header);
 	http_header = NULL;
 	if (res != 0) {
@@ -174,7 +175,10 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 				if (etag) {
 					gchar* host = get_host(settings->url);
 					if (host) {
-						url = g_strdup_printf("%s%s", host, url);
+						file = g_strdup(url);
+						g_free(url);
+						url = g_strdup_printf("%s%s", host, file);
+						g_free(file);
 						g_free(host);
 					}
 					else {
@@ -190,7 +194,10 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 				int lock = 0;
 				caldav_error lock_error;
 
-				etag = g_strdup_printf("If-Match: %s", etag);
+				file = g_strdup(etag);
+				g_free(etag);
+				etag = g_strdup_printf("If-Match: %s", file);
+				g_free(file);
 				http_header = curl_slist_append(http_header, etag);
 				g_free(etag);
 				http_header = curl_slist_append(http_header,
@@ -210,10 +217,7 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 					 * If error code is 423 (Resource is LOCKED) bail out
 					 */
 					else if (lock_error.code == 423) {
-						error->code = lock_error.code;
-						error->str = g_strdup(lock_error.str);
-						g_free(url);
-						return TRUE;
+						lock = -1;
 					}
 					/*
 					 * If error code is 501 (Not implemented) we continue
@@ -239,6 +243,7 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 					}
 				}
 				g_free(url);
+				g_free(lock_token);
 				if (res != 0 || lock < 0) {
 					/* Is this a lock_error don't change error*/
 					if (lock == 0) {
@@ -250,7 +255,7 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 						error->str = g_strdup(lock_error.str);
 					}
 					result = TRUE;
-					settings->file = NULL;
+					/*settings->file = NULL;*/
 				}
 				else {
 					long code;
