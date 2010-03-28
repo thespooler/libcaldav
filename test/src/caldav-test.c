@@ -174,6 +174,7 @@ int main(int argc, char **argv) {
 				stream = fopen(optarg, "r");
 				if (!stream) {
 					perror("File");
+					caldav_free_runtime_info(&opt);
 					return 1;
 				}
 			case 'p':
@@ -195,16 +196,19 @@ int main(int argc, char **argv) {
 	if (optind < argc - 1) {
 		fprintf(stderr, "Error: Only enter one URL\n");
 		fprintf(stderr, "%s", usage[0]);
+		caldav_free_runtime_info(&opt);
 		return 1;
 	}
 	if (optind == argc) {
 		fprintf(stderr, "Error: Missing URL\n");
 		fprintf(stderr, "%s", usage[0]);
+		caldav_free_runtime_info(&opt);
 		return 1;
 	}
 	if (ACTION == UNKNOWN) {
 		fprintf(stderr, "Error: Missing action\n");
 		fprintf(stderr, "%s", usage[0]);
+		caldav_free_runtime_info(&opt);
 		return 1;
 	}
 	if (ACTION != GETALL && ACTION != GET && ACTION != GETCALNAME &&
@@ -213,12 +217,14 @@ int main(int argc, char **argv) {
 		if (fstat(fileno(stdin), &sb) == -1) {
 			if (!stream) {
 				perror("stat");
+				caldav_free_runtime_info(&opt);
 				return 1;
 			}
 		}
 		else {
 			if (stream && sb.st_size > 0) {
 				fprintf(stderr, "Error: Option -f is in use. Cannot redirect stdin\n");
+				caldav_free_runtime_info(&opt);
 				return 1;
 			}
 			else 
@@ -227,6 +233,7 @@ int main(int argc, char **argv) {
 		input = read_stream(stream, input);
 		if (!input) {
 			fprintf(stderr, "Error: Could not read from file\n");
+			caldav_free_runtime_info(&opt);
 			return 1;
 		}
 	}
@@ -234,6 +241,7 @@ int main(int argc, char **argv) {
 		if (start == NULL || end == NULL) {
 			fprintf(stderr, "Error: Option '-a get' requires option e and s\n");
 			fprintf(stderr, "%s", usage[0]);
+			caldav_free_runtime_info(&opt);
 			return 1;
 		}
 	}
@@ -270,6 +278,8 @@ int main(int argc, char **argv) {
 					break;
 		default: break;
 	}
+	g_free(url);
+	g_free(input);
 	if (res != OK) {
 		fprintf(stderr, "Error\nCode: %ld\n%s\n", opt->error->code, opt->error->str);
 		caldav_free_runtime_info(&opt);

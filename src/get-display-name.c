@@ -137,6 +137,7 @@ gboolean caldav_getname(caldav_settings* settings, caldav_error* error) {
 			}
 			settings->file = (displayname) ? 
 					g_strdup(displayname) : g_strdup("");
+			g_free(displayname);
 		}
 	}
 	if (chunk.memory)

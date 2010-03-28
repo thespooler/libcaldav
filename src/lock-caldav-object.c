@@ -72,7 +72,7 @@ gchar* caldav_lock_object(
 	if (!curl) {
 		error->code = -1;
 		error->str = g_strdup("Could not initialize libcurl");
-		settings->file = NULL;
+		/*settings->file = NULL;*/
 		return lock_token;
 	}
 	if (settings->username) {
@@ -119,7 +119,7 @@ gchar* caldav_lock_object(
 	if (res != 0) {
 		error->code = -1;
 		error->str = g_strdup_printf("%s", error_buf);
-		settings->file = NULL;
+		/*settings->file = NULL;*/
 	}
 	else {
 		long code;
@@ -183,7 +183,7 @@ gboolean caldav_unlock_object(gchar* lock_token, gchar* URI,
 	if (!curl) {
 		error->code = -1;
 		error->str = g_strdup("Could not initialize libcurl");
-		settings->file = NULL;
+		/*settings->file = NULL;*/
 		return result;
 	}
 	if (settings->username) {
@@ -228,7 +228,7 @@ gboolean caldav_unlock_object(gchar* lock_token, gchar* URI,
 	if (res != 0) {
 		error->code = -1;
 		error->str = g_strdup_printf("%s", error_buf);
-		settings->file = NULL;
+		/*settings->file = NULL;*/
 	}
 	else {
 		long code;
@@ -286,13 +286,16 @@ gboolean caldav_lock_support(caldav_settings* settings, caldav_error* error) {
 		url = g_strdup_printf("%s%s", mystr, settings->url);
 	}
 	gchar** options = caldav_get_server_options(url, info);
+	g_free(url);
+	gchar** tmp = options;
 	caldav_free_runtime_info(&info);
 	while (*options) {
 		if (strcmp(*options++, "LOCK") == 0) {
 			found = TRUE;
 			break;
 		}
-	}			
+	}
+	g_strfreev(tmp);			
 	g_free(mystr);
 	return found;
 }

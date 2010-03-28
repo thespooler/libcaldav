@@ -403,8 +403,12 @@ static gchar* parse_caldav_report_wrap(
 	g_free(begin_type);
 	g_free(end_type);
 	if (wrap)
-		if (response)
-			response = g_strdup_printf("%s%s", response, VCAL_FOOT);
+		if (response) {
+			object = g_strdup(response);
+			g_free(response);
+			response = g_strdup_printf("%s%s", object, VCAL_FOOT);
+			g_free(object);
+		}
 	return response;
 }
 
@@ -433,8 +437,11 @@ gchar* parse_caldav_report(char* report, const char* element, const char* type) 
 			g_free(timezone);
 			temp = parse_caldav_report_wrap(report, element, type, FALSE, TRUE);
 			if (temp) {
-					response = g_strdup_printf(
-							"%s%s%s", response, temp, VCAL_FOOT);
+				gchar* tmp = g_strdup(response);
+				g_free(response);
+				response = g_strdup_printf("%s%s%s", tmp, temp, VCAL_FOOT);
+				g_free(tmp);
+				g_free(temp);
 			}
 			else {
 				g_free(response);
@@ -457,8 +464,8 @@ gchar* get_caldav_datetime(time_t* time) {
 
 	current = localtime(time);
 	datetime = g_strdup_printf("%d%.2d%.2dT%.2d%.2d%.2dZ",
-			current->tm_year + 1900, current->tm_mon + 1, current->tm_mday,
-			current->tm_hour, current->tm_min, current->tm_sec);
+		current->tm_year + 1900, current->tm_mon + 1, current->tm_mday,
+		current->tm_hour, current->tm_min, current->tm_sec);
 	return datetime;
 }
 
@@ -473,6 +480,7 @@ gchar* random_file_name(gchar* text) {
 
 	name = (unsigned char *) g_strdup(text);
 	caldav_md5_hex_digest(md5sum, name);
+	g_free(name);
 	return g_strdup(md5sum);
 }
 
@@ -495,8 +503,12 @@ gchar* verify_uid(gchar* object) {
 		newobj = g_strndup(object, strlen(object) - strlen(pos));
 		newobj = g_strchomp(newobj);
 		uid = random_file_name(object);
+		gchar*tmp = g_strdup(newobj);
+		g_free(newobj);
 		newobj = g_strdup_printf("%s\r\nUID:libcaldav-%s@tempuri.org\r\n%s",
-					newobj, uid, pos);
+					tmp, uid, pos);
+		g_free(uid);
+		g_free(tmp);
 		g_free(object);
 	}
 	if (uid)

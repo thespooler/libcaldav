@@ -98,6 +98,7 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 				enabled = TRUE;
 			error->str = g_strdup(headers.memory);
 		}
+		g_free(head);
 	}
 	else if (
 		(res == CURLE_SSL_CONNECT_ERROR ||
