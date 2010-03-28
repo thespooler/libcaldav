@@ -91,7 +91,7 @@ static gboolean make_caldav_call(caldav_settings* settings,
 		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
 		g_free(userpwd);
 	}
-	settings->custom_cacert = info->options->custom_cacert;
+	settings->custom_cacert = g_strdup(info->options->custom_cacert);
 	settings->verify_ssl_certificate = info->options->verify_ssl_certificate;
 	if (settings->verify_ssl_certificate)
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
@@ -418,7 +418,7 @@ int caldav_enabled_resource(const char* URL, runtime_info* info) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
-	settings.custom_cacert = info->options->custom_cacert;
+	settings.custom_cacert = g_strdup(info->options->custom_cacert);
 	settings.verify_ssl_certificate = info->options->verify_ssl_certificate;
 	if (settings.verify_ssl_certificate)
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
@@ -525,7 +525,7 @@ char** caldav_get_server_options(const char* URL, runtime_info* info) {
 		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
 		g_free(userpwd);
 	}
-	settings.custom_cacert = info->options->custom_cacert;
+	settings.custom_cacert = g_strdup(info->options->custom_cacert);
 	settings.verify_ssl_certificate = info->options->verify_ssl_certificate;
 	res = caldav_getoptions(curl, &settings, &server_options, info->error, FALSE);
 	if (res) {
