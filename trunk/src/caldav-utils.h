@@ -204,10 +204,10 @@ gchar* get_tag(const gchar* tag, gchar* text);
 
 
 /**
- * rebuild a ral URL with https if needed from the settings
+ * rebuild a raw URL with https if needed from the settings
  * @param settings caldav_settings
  * @return URL
  */
-gchar* rebuild_url(caldav_settings* settings);
+gchar* rebuild_url(caldav_settings* setting, gchar* uri);
 
 #endif

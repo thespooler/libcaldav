@@ -97,7 +97,7 @@ gboolean caldav_add(caldav_settings* settings, caldav_error* error) {
 	}
 	gchar* tmp = random_file_name(settings->file);
 	
-	settings->url = g_strdup_printf("%s/libcaldav-%s.ics", rebuild_url(settings), tmp);
+	settings->url = g_strdup_printf("%s/libcaldav-%s.ics", rebuild_url(settings, NULL), tmp);
 	/* XXX  settings->url is overwritten with the upload URL. when is the value
 	 * restored ??? */
 	curl_easy_setopt(curl, CURLOPT_URL, settings->url);
