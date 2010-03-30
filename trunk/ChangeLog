@@ -1,3 +1,15 @@
+libcaldav (0.5.0)
+  * Make library thread-safe. Close bug 2971102.
+  * Changed test application accordingly.
+  * Fix a number of memory leaks.
+  * Fix a number of double frees.
+  * fix regression introduced in revision 9 which broke locking
+    in delete and modify.
+  * Enhanced the error reporting for lock requests.
+  * Fix some potential memory leaks.
+
+-- Michael Rasmussen <mir@datanom.net>  Sat, 27 Mar 2010 03:27:03 +0100
+
 libcaldav (0.4.2)
   * Fix bug so that SSL specific settings are actually used.
     Close bug 2971096.

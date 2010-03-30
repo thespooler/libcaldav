@@ -44,7 +44,6 @@
 #define __CALDAV_H__
 
 #include <time.h>
-#include <glib.h>
 
 /* For debug purposes */
 /**
@@ -58,8 +57,8 @@ typedef struct {
   char		debug;       /** @var char debug
 					 	  * 0 or 1
 					 	  */
-  gboolean	verify_ssl_certificate;
-  gchar*	custom_cacert; 
+  int		verify_ssl_certificate;
+  char*		custom_cacert; 
 } debug_curl;
 
 /**
