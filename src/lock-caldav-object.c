@@ -88,7 +88,7 @@ gchar* caldav_lock_object(
 	if (settings->verify_ssl_certificate)
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
 	else
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
 	if (settings->custom_cacert)
 		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
@@ -199,7 +199,7 @@ gboolean caldav_unlock_object(gchar* lock_token, gchar* URI,
 	if (settings->verify_ssl_certificate)
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
 	else
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
 	if (settings->custom_cacert)
 		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
