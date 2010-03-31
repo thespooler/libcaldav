@@ -65,6 +65,7 @@ gchar* read_stream(FILE* stream, gchar* mem) {
 		strncat(mem, buf, sizeof(buf));
 	}
 	mem[sb.st_size] = '\0';
+	fclose(stream);
 	return mem;
 }
 
