@@ -255,12 +255,24 @@ void parse_url(caldav_settings* settings, const char* url) {
 		return;
 	if ((pos = strstr(url, "//")) != NULL) {
 		/* Does the URL use https ?*/
-		if (!g_ascii_strncasecmp(url,"https",5)) {
+		if (!g_ascii_strncasecmp(url,"https",5) && settings->usehttps == FALSE) {
 				settings->usehttps=TRUE;
 		}
 		start = g_strdup(&(*(pos + 2)));
 		if ((pos = strchr(start, '@')) != NULL) {
 			/* username and/or password present */
+			end = pos;
+			if ((pos = strchr(pos, ':')) != NULL) {
+				/* username contains @ */
+				pos = strchr(pos, '@');
+				if (! pos) {
+					g_free(start);
+					return;
+				}
+			}
+			else {
+				pos = end;
+			}
 			end = g_strdup(pos);
 			scheme = g_strndup(start, strlen(start) - strlen(pos));
 			if (start)

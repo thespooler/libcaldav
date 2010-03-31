@@ -89,7 +89,7 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 	if (!curl) {
 		error->code = -1;
 		error->str = g_strdup("Could not initialize libcurl");
-		settings->file = NULL;
+		/*settings->file = NULL;*/
 		return TRUE;
 	}
 	if (settings->username) {
