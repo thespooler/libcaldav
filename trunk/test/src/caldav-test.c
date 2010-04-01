@@ -35,7 +35,7 @@ gchar* make_url(gchar* uid, gchar* pwd, gchar* url) {
 	char* newurl = NULL;
 
 	if (!uid)
-		return url;
+		return g_strdup(url);
 	if ((pos = strstr(url, "//")) != NULL) {
 		uri = g_strdup(&(*(pos + 2)));
 		protocol = g_strndup(url, pos + 2 - url);
@@ -267,15 +267,37 @@ int main(int argc, char **argv) {
 					res = caldav_enabled_resource(url, opt);
 					if (res)
 						res = OK;
-					else
-						res = FORBIDDEN;
+					else {
+						if (opt->error->code > 0) {
+							switch (opt->error->code) {
+								case 401:
+								case 403: res = FORBIDDEN; break;
+								case 409: res = CONFLICT; break;
+								case 423: res = LOCKED; break;
+								default: res = CONFLICT; break;
+							}
+						}
+						else
+							res = CONFLICT;
+					}
 					break;
 		case OPTIONS:
 					options = caldav_get_server_options(url, opt);
 					if (options)
 						res = OK;
-					else
-						res = FORBIDDEN;
+					else {
+						if (opt->error->code > 0) {
+							switch (opt->error->code) {
+								case 401:
+								case 403: res = FORBIDDEN; break;
+								case 409: res = CONFLICT; break;
+								case 423: res = LOCKED; break;
+								default: res = CONFLICT; break;
+							}
+						}
+						else
+							res = CONFLICT;
+					}
 					break;
 		default: break;
 	}

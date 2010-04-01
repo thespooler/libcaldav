@@ -95,8 +95,10 @@ static gboolean make_caldav_call(caldav_settings* settings,
 	settings->verify_ssl_certificate = info->options->verify_ssl_certificate;
 	if (settings->verify_ssl_certificate)
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
-	else
+	else {
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+	}
 	if (settings->custom_cacert)
 		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
 	if (!test_caldav_enabled(curl, settings, info->error)) {
@@ -149,7 +151,18 @@ CALDAV_RESPONSE caldav_add_object(const char* object,
 	parse_url(&settings, URL);
 	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
-		caldav_response = CONFLICT;
+		if (info->error->code > 0) {
+			switch (info->error->code) {
+				case 403: caldav_response = FORBIDDEN; break;
+				case 409: caldav_response = CONFLICT; break;
+				case 423: caldav_response = LOCKED; break;
+				default: caldav_response = CONFLICT; break;
+			}
+		}
+		else {
+			/* fall-back to conflicting state */
+			caldav_response = CONFLICT;
+		}
 	}
 	else {
 		caldav_response = OK;
@@ -190,7 +203,18 @@ CALDAV_RESPONSE caldav_delete_object(const char* object,
 	parse_url(&settings, URL);
 	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
-		caldav_response = CONFLICT;
+		if (info->error->code > 0) {
+			switch (info->error->code) {
+				case 403: caldav_response = FORBIDDEN; break;
+				case 409: caldav_response = CONFLICT; break;
+				case 423: caldav_response = LOCKED; break;
+				default: caldav_response = CONFLICT; break;
+			}
+		}
+		else {
+			/* fall-back to conflicting state */
+			caldav_response = CONFLICT;
+		}
 	}
 	else {
 		caldav_response = OK;
@@ -231,7 +255,18 @@ CALDAV_RESPONSE caldav_modify_object(const char* object,
 	parse_url(&settings, URL);
 	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
-		caldav_response = CONFLICT;
+		if (info->error->code > 0) {
+			switch (info->error->code) {
+				case 403: caldav_response = FORBIDDEN; break;
+				case 409: caldav_response = CONFLICT; break;
+				case 423: caldav_response = LOCKED; break;
+				default: caldav_response = CONFLICT; break;
+			}
+		}
+		else {
+			/* fall-back to conflicting state */
+			caldav_response = CONFLICT;
+		}
 	}
 	else {
 		caldav_response = OK;
@@ -284,7 +319,18 @@ CALDAV_RESPONSE caldav_get_object(response *result,
 	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
 		result->msg = NULL;
-		caldav_response = FORBIDDEN;
+		if (info->error->code > 0) {
+			switch (info->error->code) {
+				case 403: caldav_response = FORBIDDEN; break;
+				case 409: caldav_response = CONFLICT; break;
+				case 423: caldav_response = LOCKED; break;
+				default: caldav_response = CONFLICT; break;
+			}
+		}
+		else {
+			/* fall-back to conflicting state */
+			caldav_response = CONFLICT;
+		}
 	}
 	else {
 		result->msg = g_strdup(settings.file);
@@ -330,7 +376,18 @@ CALDAV_RESPONSE caldav_getall_object(response* result,
 	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
 		result->msg = NULL;
-		caldav_response = FORBIDDEN;
+		if (info->error->code > 0) {
+			switch (info->error->code) {
+				case 403: caldav_response = FORBIDDEN; break;
+				case 409: caldav_response = CONFLICT; break;
+				case 423: caldav_response = LOCKED; break;
+				default: caldav_response = CONFLICT; break;
+			}
+		}
+		else {
+			/* fall-back to conflicting state */
+			caldav_response = CONFLICT;
+		}
 	}
 	else {
 		result->msg = g_strdup(settings.file);
@@ -376,7 +433,18 @@ CALDAV_RESPONSE caldav_get_displayname(response* result,
 	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
 		result->msg = NULL;
-		caldav_response = FORBIDDEN;
+		if (info->error->code > 0) {
+			switch (info->error->code) {
+				case 403: caldav_response = FORBIDDEN; break;
+				case 409: caldav_response = CONFLICT; break;
+				case 423: caldav_response = LOCKED; break;
+				default: caldav_response = CONFLICT; break;
+			}
+		}
+		else {
+			/* fall-back to conflicting state */
+			caldav_response = CONFLICT;
+		}
 	}
 	else {
 		result->msg = g_strdup(settings.file);
@@ -422,8 +490,10 @@ int caldav_enabled_resource(const char* URL, runtime_info* info) {
 	settings.verify_ssl_certificate = info->options->verify_ssl_certificate;
 	if (settings.verify_ssl_certificate)
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
-	else
+	else {
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+	}
 	if (settings.custom_cacert)
 		curl_easy_setopt(curl, CURLOPT_CAINFO, settings.custom_cacert);
 	if (settings.username) {
