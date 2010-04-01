@@ -7,6 +7,9 @@ libcaldav (0.5.0)
     in delete and modify.
   * Enhanced the error reporting for lock requests.
   * Fix some potential memory leaks.
+  * Fix bug in parsing URL for username and password.
+  * Fix pedantic behaviour from Google which chokes on URL's
+    containing //
 
 -- Michael Rasmussen <mir@datanom.net>  Sat, 27 Mar 2010 03:27:03 +0100
 

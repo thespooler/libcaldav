@@ -51,10 +51,10 @@
  * A struct used to set internal options in the library
  */
 typedef struct {
-  char		trace_ascii; /** @var char trace_ascii
+  int		trace_ascii; /** @var int trace_ascii
 					 	  * 0 or 1
 					 	  */
-  char		debug;       /** @var char debug
+  int		debug;       /** @var int debug
 					 	  * 0 or 1
 					 	  */
   int		verify_ssl_certificate;

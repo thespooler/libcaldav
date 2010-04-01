@@ -199,7 +199,7 @@ void init_caldav_settings(caldav_settings* settings) {
 	settings->custom_cacert = NULL;
 	settings->verify_ssl_certificate = TRUE;
 	settings->debug = FALSE;
-	settings->trace_ascii = 1;
+	settings->trace_ascii = TRUE;
 	settings->ACTION = UNKNOWN;
 	settings->start = 0;
 	settings->end = 0;
@@ -233,7 +233,7 @@ void free_caldav_settings(caldav_settings* settings) {
 	settings->verify_ssl_certificate = TRUE;
 	settings->usehttps = FALSE;
 	settings->debug = FALSE;
-	settings->trace_ascii = 1;
+	settings->trace_ascii = TRUE;
 	settings->ACTION = UNKNOWN;
 	settings->start = 0;
 	settings->end = 0;
@@ -557,6 +557,7 @@ gchar* get_tag(const gchar* tag, gchar* text) {
 	gchar* res = NULL;
 	gchar* the_tag = NULL;
 
+	/*printf("%s\n", text);*/
 	the_tag = g_strdup_printf("<%s>", tag);
 	if ((pos = strstr(text, the_tag)) == NULL) {
 		g_free(the_tag);
@@ -575,7 +576,14 @@ gchar* get_tag(const gchar* tag, gchar* text) {
  */
 #define ELEM_ETAG "getetag"
 gchar* get_etag(gchar* text) {
-	return get_tag(ELEM_ETAG, text);	
+	gchar* etag = NULL;
+	
+	etag = get_tag(ELEM_ETAG, text);
+	/* Maybe namespace prefixed */
+	if (!etag) {
+		etag = get_tag("D:getetag", text);
+	}
+	return etag;
 }
 
 /**
