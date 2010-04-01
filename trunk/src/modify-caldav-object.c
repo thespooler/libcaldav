@@ -188,6 +188,7 @@ gboolean caldav_modify(caldav_settings* settings, caldav_error* error) {
 				}
 				else {
 					g_free(url);
+					url = NULL;
 				}
 			}
 			if (url) {
