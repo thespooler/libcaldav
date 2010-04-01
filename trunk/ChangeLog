@@ -10,6 +10,8 @@ libcaldav (0.5.0)
   * Fix bug in parsing URL for username and password.
   * Fix pedantic behaviour from Google which chokes on URL's
     containing //
+  * Fix bug so that get_etag also is able to handle namespace
+    prefix for finding etags
 
 -- Michael Rasmussen <mir@datanom.net>  Sat, 27 Mar 2010 03:27:03 +0100
 
