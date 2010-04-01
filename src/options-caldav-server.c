@@ -60,8 +60,10 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 	headers.size = 0;
 	if (settings->verify_ssl_certificate)
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
-	else
+	else {
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+	}
 	if (settings->custom_cacert)
 		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
 	/* send all data to this function  */
@@ -94,8 +96,6 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 			long code;
 			res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 			error->code = code;
-			if (code == 200 && test)
-				enabled = TRUE;
 			error->str = g_strdup(headers.memory);
 		}
 		g_free(head);
