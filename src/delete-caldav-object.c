@@ -79,37 +79,22 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 	chunk.size = 0;    /* no data at this point */
 	headers.memory = NULL;
 	headers.size = 0;
+
+	curl = get_curl(settings);
+	if (!curl) {
+		error->code = -1;
+		error->str = g_strdup("Could not initialize libcurl");
+		g_free(settings->file);
+		settings->file = NULL;
+		return TRUE;
+	}
+
 	http_header = curl_slist_append(http_header,
 			"Content-Type: application/xml; charset=\"utf-8\"");
 	http_header = curl_slist_append(http_header, "Depth: infinity");
 	http_header = curl_slist_append(http_header, "Expect:");
 	http_header = curl_slist_append(http_header, "Transfer-Encoding:");
 	data.trace_ascii = settings->trace_ascii;
-	curl = curl_easy_init();
-	if (!curl) {
-		error->code = -1;
-		error->str = g_strdup("Could not initialize libcurl");
-		/*settings->file = NULL;*/
-		return TRUE;
-	}
-	if (settings->username) {
-		gchar* userpwd = NULL;
-		if (settings->password)
-			userpwd = g_strdup_printf("%s:%s",
-				settings->username, settings->password);
-		else
-			userpwd = g_strdup_printf("%s",	settings->username);
-		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
-		g_free(userpwd);
-	}
-	if (settings->verify_ssl_certificate)
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
-	else {
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
-	}
-	if (settings->custom_cacert)
-		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
 	/* send all data to this function  */
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -119,16 +104,12 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION,	WriteHeaderCallback);
 	/* we pass our 'headers' struct to the callback function */
 	curl_easy_setopt(curl, CURLOPT_WRITEHEADER, (void *)&headers);
-	/* some servers don't like requests that are made without a user-agent
-	 * field, so we provide one */
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, (char *) &error_buf);
 	if (settings->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
 		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
-	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, NULL));
 	gchar* file = g_strdup(settings->file);
 	if ((uid = get_response_header("uid", file, FALSE)) == NULL) {
 		g_free(file);
@@ -156,6 +137,7 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 	if (res != 0) {
 		error->code = -1;
 		error->str = g_strdup_printf("%s", error_buf);
+		g_free(settings->file);
 		settings->file = NULL;
 		result = TRUE;
 	}
@@ -186,10 +168,12 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 					else {
 						g_free(etag);
 						g_free(url);
+						url = NULL;
 					}
 				}
 				else {
 					g_free(url);
+					url = NULL;
 				}
 			}
 			if (url) {
@@ -234,7 +218,7 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 				}
 				if (! LOCKSUPPORT || (LOCKSUPPORT && lock_token)) {
 					curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
-					curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, url)); /* FIXME to verify*/
+					curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, url));
 					curl_easy_setopt(curl, CURLOPT_POSTFIELDS, NULL);
 					curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, 0);
 					curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE");
@@ -257,7 +241,8 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 						error->str = g_strdup(lock_error.str);
 					}
 					result = TRUE;
-					/*settings->file = NULL;*/
+					g_free(settings->file);
+					settings->file = NULL;
 				}
 				else {
 					long code;

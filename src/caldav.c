@@ -75,33 +75,15 @@ static gboolean make_caldav_call(caldav_settings* settings,
 
 	g_return_val_if_fail(info != NULL, TRUE);
 
-	curl = curl_easy_init();
+	curl = get_curl(settings);
 	if (!curl) {
 		info->error->str = g_strdup("Could not initialize libcurl");
+		g_free(settings->file);
 		settings->file = NULL;
 		return TRUE;
 	}
-	if (settings->username) {
-		gchar* userpwd = NULL;
-		if (settings->password)
-			userpwd = g_strdup_printf("%s:%s",
-				settings->username, settings->password);
-		else
-			userpwd = g_strdup_printf("%s",	settings->username);
-		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
-		g_free(userpwd);
-	}
-	settings->custom_cacert = g_strdup(info->options->custom_cacert);
-	settings->verify_ssl_certificate = info->options->verify_ssl_certificate;
-	if (settings->verify_ssl_certificate)
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
-	else {
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
-	}
-	if (settings->custom_cacert)
-		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
 	if (!test_caldav_enabled(curl, settings, info->error)) {
+		g_free(settings->file);
 		settings->file = NULL;
 		curl_easy_cleanup(curl);
 		return TRUE;
@@ -471,40 +453,25 @@ int caldav_enabled_resource(const char* URL, runtime_info* info) {
 
 	init_runtime(info);
 	init_caldav_settings(&settings);
+
+	parse_url(&settings, URL);
+	curl = get_curl(&settings);
+	if (!curl) {
+		info->error->code = -1;
+		info->error->str = g_strdup("Could not initialize libcurl");
+		settings.file = NULL;
+		return TRUE;
+	}
+
 	if (info->options->trace_ascii)
 		data.trace_ascii = 1;
 	else
 		data.trace_ascii = 0;
-	parse_url(&settings, URL);
-	curl = curl_easy_init();
-	if (!curl) {
-		settings.file = NULL;
-		return 0;
-	}
+
 	if (info->options->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
 		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
-	}
-	settings.custom_cacert = g_strdup(info->options->custom_cacert);
-	settings.verify_ssl_certificate = info->options->verify_ssl_certificate;
-	if (settings.verify_ssl_certificate)
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
-	else {
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
-	}
-	if (settings.custom_cacert)
-		curl_easy_setopt(curl, CURLOPT_CAINFO, settings.custom_cacert);
-	if (settings.username) {
-		gchar* userpwd = NULL;
-		if (settings.password)
-			userpwd = g_strdup_printf("%s:%s",
-				settings.username, settings.password);
-		else
-			userpwd = g_strdup_printf("%s",	settings.username);
-		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
-		g_free(userpwd);
 	}
 	gboolean res = test_caldav_enabled(curl, &settings, info->error);
 	free_caldav_settings(&settings);
@@ -560,7 +527,6 @@ char** caldav_get_server_options(const char* URL, runtime_info* info) {
 	CURL* curl;
 	caldav_settings settings;
 	response server_options;
-	struct config_data data;
 	gchar** option_list = NULL;
 	gchar** tmp;
 	gboolean res = FALSE;
@@ -570,33 +536,16 @@ char** caldav_get_server_options(const char* URL, runtime_info* info) {
 	init_runtime(info);
 	tmp = option_list = NULL;
 	init_caldav_settings(&settings);
-	if (info->options->trace_ascii)
-		data.trace_ascii = 1;
-	else
-		data.trace_ascii = 0;
+
 	parse_url(&settings, URL);
-	curl = curl_easy_init();
+	curl = get_curl(&settings);
 	if (!curl) {
+		info->error->code = -1;
+		info->error->str = g_strdup("Could not initialize libcurl");
 		settings.file = NULL;
 		return NULL;
 	}
-	if (info->options->debug) {
-		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
-		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
-		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
-	}
-	if (settings.username) {
-		gchar* userpwd = NULL;
-		if (settings.password)
-			userpwd = g_strdup_printf("%s:%s",
-				settings.username, settings.password);
-		else
-			userpwd = g_strdup_printf("%s",	settings.username);
-		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
-		g_free(userpwd);
-	}
-	settings.custom_cacert = g_strdup(info->options->custom_cacert);
-	settings.verify_ssl_certificate = info->options->verify_ssl_certificate;
+
 	res = caldav_getoptions(curl, &settings, &server_options, info->error, FALSE);
 	if (res) {
 		if (server_options.msg) {
@@ -612,24 +561,74 @@ char** caldav_get_server_options(const char* URL, runtime_info* info) {
 	return (option_list) ? option_list : NULL;
 }
 
+/**
+ * Function for getting an initialized runtime_info structure
+ * @return runtime_info. @see runtime_info
+ */
+runtime_info* caldav_get_runtime_info() {
+	runtime_info* rt_info;
+	
+	rt_info = g_new0(runtime_info, 1);
+	rt_info->error = g_new0(caldav_error, 1);
+	rt_info->options = g_new0(debug_curl, 1);
+	
+	return rt_info;
+}
+
+/**
+ * Function for freeing memory for a previous initialization of an info
+ * structure
+ * @param info Address to a pointer to a runtime_info structure. @see 
+ * runtime_info
+ */
 void caldav_free_runtime_info(runtime_info** info) {
     runtime_info* ri;
 
     if (*info) {
-	ri = *info;
-	if (ri->error) {
-	    if (ri->error->str)
-		g_free(ri->error->str);
-	    g_free(ri->error);
-	    ri->error = NULL;
-	}
-	if (ri->options) {
-	    if (ri->options->custom_cacert)
-		g_free(ri->options->custom_cacert);
-	    g_free(ri->options);
-	    ri->options = NULL;
-	}
-	g_free(ri);
-	*info = ri = NULL;
+		ri = *info;
+		if (ri->error) {
+		    if (ri->error->str)
+			g_free(ri->error->str);
+		    g_free(ri->error);
+		    ri->error = NULL;
+		}
+		if (ri->options) {
+		    if (ri->options->custom_cacert)
+			g_free(ri->options->custom_cacert);
+		    g_free(ri->options);
+		    ri->options = NULL;
+		}
+		g_free(ri);
+		*info = ri = NULL;
     }
+}
+
+/**
+ * Function for getting an initialized response structure
+ * @return response. @see _response
+ */
+response* caldav_get_response() {
+	response* r;
+	
+	r = g_new0(response, 1);
+	
+	return r;
+}
+
+/**
+ * Function for freeing memory for a previous initialization of an response
+ * structure
+ * @param info Address to a pointer to a response structure. @see 
+ * _response
+ */
+void caldav_free_response(response** resp) {
+	response* r;
+
+	if (*resp) {
+		r = *resp;
+		if (r->msg)
+			g_free(r->msg);
+		g_free(r);
+		*resp = r = NULL;
+	}
 }

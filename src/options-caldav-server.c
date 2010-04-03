@@ -50,6 +50,9 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 	struct MemoryStruct headers;
 	gboolean enabled = FALSE;
 
+	if (! curl)
+		return FALSE;
+
 	if (!error) {
 		error = (caldav_error *) malloc(sizeof(struct _caldav_error));
 		memset(error, '\0', sizeof(struct _caldav_error));
@@ -58,14 +61,7 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 	chunk.size = 0;    /* no data at this point */
 	headers.memory = NULL;
 	headers.size = 0;
-	if (settings->verify_ssl_certificate)
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
-	else {
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
-	}
-	if (settings->custom_cacert)
-		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
+
 	/* send all data to this function  */
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
 	/* we pass our 'chunk' struct to the callback function */
@@ -74,16 +70,11 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, WriteHeaderCallback);
 	/* we pass our 'chunk' struct to the callback function */
 	curl_easy_setopt(curl, CURLOPT_WRITEHEADER, (void *)&headers);
-	/* some servers don't like requests that are made without a user-agent
-	 * field, so we provide one */
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, (char *) &error_buf);
 	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "OPTIONS");
-	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, NULL));
 	res = curl_easy_perform(curl);
 	if (res == 0) {
 		gchar* head;
-		/*gchar* headerlist = g_strdup(headers.memory);*/
 		head = get_response_header("DAV", headers.memory, TRUE);
 		if (head && strstr(head, "calendar-access") != NULL) {
 			enabled = TRUE;

@@ -61,37 +61,22 @@ gboolean caldav_getname(caldav_settings* settings, caldav_error* error) {
 	chunk.size = 0;    /* no data at this point */
 	headers.memory = NULL;
 	headers.size = 0;
+
+	curl = get_curl(settings);
+	if (!curl) {
+		error->code = -1;
+		error->str = g_strdup("Could not initialize libcurl");
+		g_free(settings->file);
+		settings->file = NULL;
+		return TRUE;
+	}
+
 	http_header = curl_slist_append(http_header,
 			"Content-Type: application/xml; charset=\"utf-8\"");
 	http_header = curl_slist_append(http_header, "Depth: 0");
 	http_header = curl_slist_append(http_header, "Expect:");
 	http_header = curl_slist_append(http_header, "Transfer-Encoding:");
 	data.trace_ascii = settings->trace_ascii;
-	curl = curl_easy_init();
-	if (!curl) {
-		error->code = -1;
-		error->str = g_strdup("Could not initialize libcurl");
-		settings->file = NULL;
-		return TRUE;
-	}
-	if (settings->username) {
-		gchar* userpwd = NULL;
-		if (settings->password)
-			userpwd = g_strdup_printf("%s:%s",
-				settings->username, settings->password);
-		else
-			userpwd = g_strdup_printf("%s",	settings->username);
-		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
-		g_free(userpwd);
-	}
-	if (settings->verify_ssl_certificate)
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
-	else {
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
-	}
-	if (settings->custom_cacert)
-		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
 	/* send all data to this function  */
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
 	/* we pass our 'chunk' struct to the callback function */
@@ -104,9 +89,6 @@ gboolean caldav_getname(caldav_settings* settings, caldav_error* error) {
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, getname_request);
 	curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, strlen(getname_request));
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
-	/* some servers don't like requests that are made without a user-agent
-	 * field, so we provide one */
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, (char *) &error_buf);
 	if (settings->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
@@ -114,11 +96,11 @@ gboolean caldav_getname(caldav_settings* settings, caldav_error* error) {
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
 	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PROPFIND");
-	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, NULL));
 	res = curl_easy_perform(curl);
 	if (res != 0) {
 		error->code = -1;
 		error->str = g_strdup_printf("%s", error_buf);
+		g_free(settings->file);
 		settings->file = NULL;
 		result = TRUE;
 	}

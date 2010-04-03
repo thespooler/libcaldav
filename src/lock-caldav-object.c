@@ -55,6 +55,7 @@ gchar* caldav_lock_object(
 	struct MemoryStruct headers;
 	struct curl_slist *http_header = NULL;
 	gchar* lock_token = NULL;
+	gchar* url;
 
 	if (! caldav_lock_support(settings, error))
 		return lock_token;
@@ -62,37 +63,22 @@ gchar* caldav_lock_object(
 	chunk.size = 0;    /* no data at this point */
 	headers.memory = NULL;
 	headers.size = 0;
+
+	curl = get_curl(settings);
+	if (!curl) {
+		error->code = -1;
+		error->str = g_strdup("Could not initialize libcurl");
+		g_free(settings->file);
+		settings->file = NULL;
+		return lock_token;
+	}
+
 	http_header = curl_slist_append(http_header,
 			"Content-Type: application/xml; charset=\"utf-8\"");
 	http_header = curl_slist_append(http_header, "Timeout: Second-300");
 	http_header = curl_slist_append(http_header, "Expect:");
 	http_header = curl_slist_append(http_header, "Transfer-Encoding:");
 	data.trace_ascii = settings->trace_ascii;
-	curl = curl_easy_init();
-	if (!curl) {
-		error->code = -1;
-		error->str = g_strdup("Could not initialize libcurl");
-		/*settings->file = NULL;*/
-		return lock_token;
-	}
-	if (settings->username) {
-		gchar* userpwd = NULL;
-		if (settings->password)
-			userpwd = g_strdup_printf("%s:%s",
-				settings->username, settings->password);
-		else
-			userpwd = g_strdup_printf("%s",	settings->username);
-		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
-		g_free(userpwd);
-	}
-	if (settings->verify_ssl_certificate)
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
-	else {
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
-	}
-	if (settings->custom_cacert)
-		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
 	/* send all data to this function  */
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -102,16 +88,19 @@ gchar* caldav_lock_object(
 	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION,	WriteHeaderCallback);
 	/* we pass our 'headers' struct to the callback function */
 	curl_easy_setopt(curl, CURLOPT_WRITEHEADER, (void *)&headers);
-	/* some servers don't like requests that are made without a user-agent
-	 * field, so we provide one */
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, (char *) &error_buf);
 	if (settings->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
 		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
-	curl_easy_setopt(curl, CURLOPT_URL, URI);
+	if (settings->usehttps) {
+		url = g_strdup_printf("https://%s", URI);
+	} else {
+		url = g_strdup_printf("http://%s", URI);
+	}
+	curl_easy_setopt(curl, CURLOPT_URL, url);
+	g_free(url);
 	/* enable uploading */
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, lock_query);
 	curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, strlen(lock_query));
@@ -121,7 +110,8 @@ gchar* caldav_lock_object(
 	if (res != 0) {
 		error->code = -1;
 		error->str = g_strdup_printf("%s", error_buf);
-		/*settings->file = NULL;*/
+		g_free(settings->file);
+		settings->file = NULL;
 	}
 	else {
 		long code;
@@ -169,6 +159,7 @@ gboolean caldav_unlock_object(gchar* lock_token, gchar* URI,
 	struct MemoryStruct headers;
 	struct curl_slist *http_header = NULL;
 	gboolean result = FALSE;
+	gchar* url;
 
 	if (! caldav_lock_support(settings, error))
 		return result;
@@ -176,36 +167,21 @@ gboolean caldav_unlock_object(gchar* lock_token, gchar* URI,
 	chunk.size = 0;    /* no data at this point */
 	headers.memory = NULL;
 	headers.size = 0;
+
+	curl = get_curl(settings);
+	if (!curl) {
+		error->code = -1;
+		error->str = g_strdup("Could not initialize libcurl");
+		g_free(settings->file);
+		settings->file = NULL;
+		return TRUE;
+	}
+
 	http_header = curl_slist_append(http_header, 
 			g_strdup_printf("Lock-Token: %s", lock_token));
 	http_header = curl_slist_append(http_header, "Expect:");
 	http_header = curl_slist_append(http_header, "Transfer-Encoding:");
 	data.trace_ascii = settings->trace_ascii;
-	curl = curl_easy_init();
-	if (!curl) {
-		error->code = -1;
-		error->str = g_strdup("Could not initialize libcurl");
-		/*settings->file = NULL;*/
-		return result;
-	}
-	if (settings->username) {
-		gchar* userpwd = NULL;
-		if (settings->password)
-			userpwd = g_strdup_printf("%s:%s",
-				settings->username, settings->password);
-		else
-			userpwd = g_strdup_printf("%s",	settings->username);
-		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
-		g_free(userpwd);
-	}
-	if (settings->verify_ssl_certificate)
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
-	else {
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
-	}
-	if (settings->custom_cacert)
-		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
 	/* send all data to this function  */
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -215,16 +191,19 @@ gboolean caldav_unlock_object(gchar* lock_token, gchar* URI,
 	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION,	WriteHeaderCallback);
 	/* we pass our 'headers' struct to the callback function */
 	curl_easy_setopt(curl, CURLOPT_WRITEHEADER, (void *)&headers);
-	/* some servers don't like requests that are made without a user-agent
-	 * field, so we provide one */
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, (char *) &error_buf);
 	if (settings->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
 		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
-	curl_easy_setopt(curl, CURLOPT_URL, URI);
+	if (settings->usehttps) {
+		url = g_strdup_printf("https://%s", URI);
+	} else {
+		url = g_strdup_printf("http://%s", URI);
+	}
+	curl_easy_setopt(curl, CURLOPT_URL, url);
+	g_free(url);
 	/* enable uploading */
 	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "UNLOCK");
 	res = curl_easy_perform(curl);
@@ -232,7 +211,8 @@ gboolean caldav_unlock_object(gchar* lock_token, gchar* URI,
 	if (res != 0) {
 		error->code = -1;
 		error->str = g_strdup_printf("%s", error_buf);
-		/*settings->file = NULL;*/
+		g_free(settings->file);
+		settings->file = NULL;
 	}
 	else {
 		long code;
@@ -267,8 +247,7 @@ gboolean caldav_lock_support(caldav_settings* settings, caldav_error* error) {
 	gchar* mystr = NULL;
 	runtime_info* info;
 	
-	info = g_new0(runtime_info, 1);
-	info->options = g_new0(debug_curl, 1);
+	info = caldav_get_runtime_info();
 	info->options->verify_ssl_certificate = settings->verify_ssl_certificate;
 	info->options->custom_cacert = g_strdup(settings->custom_cacert);
 	if (settings->usehttps) {

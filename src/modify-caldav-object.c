@@ -80,37 +80,22 @@ gboolean caldav_modify(caldav_settings* settings, caldav_error* error) {
 	chunk.size = 0;    /* no data at this point */
 	headers.memory = NULL;
 	headers.size = 0;
+
+	curl = get_curl(settings);
+	if (!curl) {
+		error->code = -1;
+		error->str = g_strdup("Could not initialize libcurl");
+		g_free(settings->file);
+		settings->file = NULL;
+		return TRUE;
+	}
+
 	http_header = curl_slist_append(http_header,
 			"Content-Type: application/xml; charset=\"utf-8\"");
 	http_header = curl_slist_append(http_header, "Depth: 1");
 	http_header = curl_slist_append(http_header, "Expect:");
 	http_header = curl_slist_append(http_header, "Transfer-Encoding:");
 	data.trace_ascii = settings->trace_ascii;
-	curl = curl_easy_init();
-	if (!curl) {
-		error->code = -1;
-		error->str = g_strdup("Could not initialize libcurl");
-		/*settings->file = NULL;*/
-		return TRUE;
-	}
-	if (settings->username) {
-		gchar* userpwd = NULL;
-		if (settings->password)
-			userpwd = g_strdup_printf("%s:%s",
-				settings->username, settings->password);
-		else
-			userpwd = g_strdup_printf("%s",	settings->username);
-		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
-		g_free(userpwd);
-	}
-	if (settings->verify_ssl_certificate)
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
-	else {
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
-	}
-	if (settings->custom_cacert)
-		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
 	/* send all data to this function  */
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -120,16 +105,12 @@ gboolean caldav_modify(caldav_settings* settings, caldav_error* error) {
 	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION,	WriteHeaderCallback);
 	/* we pass our 'headers' struct to the callback function */
 	curl_easy_setopt(curl, CURLOPT_WRITEHEADER, (void *)&headers);
-	/* some servers don't like requests that are made without a user-agent
-	 * field, so we provide one */
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, (char *) &error_buf);
 	if (settings->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
 		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
-	curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, NULL));
 	gchar* file = g_strdup(settings->file);
 	if ((uid = get_response_header("uid", file, FALSE)) == NULL) {
 		g_free(file);
@@ -153,10 +134,12 @@ gboolean caldav_modify(caldav_settings* settings, caldav_error* error) {
 	res = curl_easy_perform(curl);
 	curl_slist_free_all(http_header);
 	http_header = NULL;
+	g_free(search);
 	if (res != 0) {
 		error->code = -1;
 		error->str = g_strdup_printf("%s", error_buf);
-		/*settings->file = NULL;*/
+		g_free(settings->file);
+		settings->file = NULL;
 		result = TRUE;
 	}
 	else {
@@ -186,93 +169,110 @@ gboolean caldav_modify(caldav_settings* settings, caldav_error* error) {
 					else {
 						g_free(etag);
 						g_free(url);
+						url = NULL;
 					}
 				}
 				else {
 					g_free(url);
 					url = NULL;
 				}
-			}
-			if (url) {
-				int lock = 0;
-				caldav_error lock_error;
-
-				file = g_strdup(etag);
-				g_free(etag);
-				etag = g_strdup_printf("If-Match: %s", file);
-				g_free(file);
-				http_header = curl_slist_append(http_header, etag);
-				g_free(etag);
-				http_header = curl_slist_append(http_header,
-					"Content-Type: text/calendar; charset=\"utf-8\"");
-				http_header = curl_slist_append(http_header, "Expect:");
-				http_header = curl_slist_append(
-								http_header, "Transfer-Encoding:");
-				LOCKSUPPORT = caldav_lock_support(settings, &lock_error);
-				if (LOCKSUPPORT) {
-					lock_token = caldav_lock_object(url, settings, &lock_error);
-					if (lock_token) {
-						http_header = curl_slist_append(
-							http_header, g_strdup_printf(
-									"If: (%s)", lock_token));
+				if (url) {
+					int lock = 0;
+					caldav_error lock_error;
+	
+					file = g_strdup(etag);
+					g_free(etag);
+					etag = g_strdup_printf("If-Match: %s", file);
+					g_free(file);
+					http_header = curl_slist_append(http_header, etag);
+					g_free(etag);
+					http_header = curl_slist_append(http_header,
+						"Content-Type: text/calendar; charset=\"utf-8\"");
+					http_header = curl_slist_append(http_header, "Expect:");
+					http_header = curl_slist_append(
+									http_header, "Transfer-Encoding:");
+					LOCKSUPPORT = caldav_lock_support(settings, &lock_error);
+					if (LOCKSUPPORT) {
+						lock_token = caldav_lock_object(url, settings, &lock_error);
+						if (lock_token) {
+							http_header = curl_slist_append(
+								http_header, g_strdup_printf(
+										"If: (%s)", lock_token));
+						}
+						/*
+						 * If error code is 423 (Resource is LOCKED) bail out
+						 */
+						else if (lock_error.code == 423) {
+							lock = -1;
+						}
+						/*
+						 * If error code is 501 (Not implemented) we continue
+						 * hoping for the best.
+						 */
+						else if (lock_error.code == 501) {
+							lock_token = g_strdup("");
+						}
+						else {
+							lock = -1;
+						}
 					}
-					/*
-					 * If error code is 501 (Not implemented) we continue
-					 * hoping for the best.
-					 */
-					else if (lock_error.code == 501) {
-						lock_token = g_strdup("");
+					if (! LOCKSUPPORT || (LOCKSUPPORT && lock_token)) {
+						curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
+						curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, url));
+						curl_easy_setopt(curl, CURLOPT_POSTFIELDS, settings->file);
+						curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, 
+									strlen(settings->file));
+						curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+						res = curl_easy_perform(curl);
+						if (LOCKSUPPORT && lock_token) {
+							caldav_unlock_object(
+									lock_token, url, settings, &lock_error);
+						}
+					}
+					g_free(url);
+					g_free(lock_token);
+					if (res != 0 || lock < 0) {
+						/* Is this a lock_error don't change error*/
+						if (lock == 0) {
+							error->code = code;
+							error->str = g_strdup(chunk.memory);
+						}
+						else {
+							error->code = lock_error.code;
+							error->str = g_strdup(lock_error.str);
+						}
+						result = TRUE;
+						g_free(settings->file);
+						settings->file = NULL;
 					}
 					else {
-						lock = -1;
+						long code;
+						res = curl_easy_getinfo(
+									curl, CURLINFO_RESPONSE_CODE, &code);
+						if (code != 204) {
+							error->code = code;
+							error->str = g_strdup(chunk.memory);
+							result = TRUE;
+						}
 					}
-				}
-				if (! LOCKSUPPORT || (LOCKSUPPORT && lock_token)) {
-					curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
-					curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, url));
-					curl_easy_setopt(curl, CURLOPT_POSTFIELDS, settings->file);
-					curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, 
-								strlen(settings->file));
-					curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
-					res = curl_easy_perform(curl);
-					if (LOCKSUPPORT && lock_token) {
-						caldav_unlock_object(
-								lock_token, url, settings, &lock_error);
-					}
-				}
-				g_free(url);
-				g_free(lock_token);
-				if (res != 0 || lock < 0) {
-					/* Is this a lock_error don't change error*/
-					if (lock == 0) {
-						error->code = code;
-						error->str = g_strdup(chunk.memory);
-					}
-					else {
-						error->code = lock_error.code;
-						error->str = g_strdup(lock_error.str);
-					}
-					result = TRUE;
-					/*settings->file = NULL;*/
+					curl_slist_free_all(http_header);
 				}
 				else {
-					long code;
-					res = curl_easy_getinfo(
-								curl, CURLINFO_RESPONSE_CODE, &code);
-					if (code != 204) {
-						error->code = code;
+					error->code = code;
+					if (chunk.memory)
 						error->str = g_strdup(chunk.memory);
-						result = TRUE;
-					}
+					else
+						error->str = g_strdup("No object found");
+					result = TRUE;
 				}
-				curl_slist_free_all(http_header);
 			}
 			else {
-				error->code = code;
-				if (chunk.memory)
-					error->str = g_strdup(chunk.memory);
-				else
-					error->str = g_strdup("No object found");
+				/* 
+				 * No object found on server. Posible synchronization
+				 * problem or a server side race condition
+				 */
+				error->code = 409;
+				error->str = g_strdup("No object found");
 				result = TRUE;
 			}
 		}

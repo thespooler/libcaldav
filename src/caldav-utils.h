@@ -210,4 +210,11 @@ gchar* get_tag(const gchar* tag, gchar* text);
  */
 gchar* rebuild_url(caldav_settings* setting, gchar* uri);
 
+/**
+ * Prepare a curl connection
+ * @param settings caldav_settings
+ * @return CURL
+ */
+CURL* get_curl(caldav_settings* setting);
+
 #endif

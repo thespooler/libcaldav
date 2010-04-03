@@ -291,11 +291,31 @@ void caldav_set_options(debug_curl curl_options);
 char** caldav_get_server_options(const char* URL, runtime_info* info);
 
 /**
+ * Function for getting an initialized runtime_info structure
+ * @return runtime_info. @see runtime_info
+ */
+runtime_info* caldav_get_runtime_info();
+
+/**
  * Function for freeing memory for a previous initialization of an info
  * structure
  * @param info Address to a pointer to a runtime_info structure. @see 
  * runtime_info
  */
 void caldav_free_runtime_info(runtime_info** info);
+
+/**
+ * Function for getting an initialized response structure
+ * @return response. @see _response
+ */
+response* caldav_get_response();
+
+/**
+ * Function for freeing memory for a previous initialization of an response
+ * structure
+ * @param info Address to a pointer to a response structure. @see 
+ * _response
+ */
+void caldav_free_response(response** info);
 
 #endif

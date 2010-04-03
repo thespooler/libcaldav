@@ -29,13 +29,13 @@ AC_CONFIG_HEADER([config.h])
 AM_MAINTAINER_MODE
 
 if test $USE_MAINTAINER_MODE = yes; then
-	CFLAGS="-g -Wall"
+	CFLAGS="-g -Wall -D_REENTRANT"
 	STATIC=1
 	DYNAMIC=0
 	BUILD_TEST=true
 else
 	#CFLAGS="-g -Wall"
-	CFLAGS="$CFLAGS -O2 -Wall"
+	CFLAGS="$CFLAGS -O2 -Wall -D_REENTRANT"
 	STATIC=0
 	DYNAMIC=1
 	BUILD_TEST=false
@@ -103,6 +103,7 @@ AC_CONFIG_COMMANDS(
     [echo ""
     echo "libcaldav will be compiled with these settings:"
     echo ""
+    echo -e "\tCFLAGS:\t\t\t\t$cflags"
     echo -e "\tBuild caldav-test:\t\t$caldav"
     echo -e "\tBuild API documentation:\t$doc"
 	echo -e "\tLibrary is linked:\t\t$link"
@@ -114,6 +115,7 @@ AC_CONFIG_COMMANDS(
     echo ""],
     [caldav=${caldav}
      doc=${doc}
+     cflags="${CFLAGS}"
 	 if test $DYNAMIC -eq 1; then
 		link="Dynamic"
 	else
