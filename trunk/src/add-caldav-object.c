@@ -43,42 +43,29 @@ gboolean caldav_add(caldav_settings* settings, caldav_error* error) {
 	struct MemoryStruct headers;
 	struct curl_slist *http_header = NULL;
 	gboolean result = FALSE;
+	gchar* url;
 
 	chunk.memory = NULL; /* we expect realloc(NULL, size) to work */
 	chunk.size = 0;    /* no data at this point */
 	headers.memory = NULL;
 	headers.size = 0;
+
+	curl = get_curl(settings);
+	if (!curl) {
+		error->code = -1;
+		error->str = g_strdup("Could not initialize libcurl");
+		g_free(settings->file);
+		settings->file = NULL;
+		return TRUE;
+	}
+
 	http_header = curl_slist_append(http_header,
 			"Content-Type: text/calendar; charset=\"utf-8\"");
 	http_header = curl_slist_append(http_header, "If-None-Match: *");
 	http_header = curl_slist_append(http_header, "Expect:");
 	http_header = curl_slist_append(http_header, "Transfer-Encoding:");
 	data.trace_ascii = settings->trace_ascii;
-	curl = curl_easy_init();
-	if (!curl) {
-		error->code = -1;
-		error->str = g_strdup("Could not initialize libcurl");
-		settings->file = NULL;
-		return TRUE;
-	}
-	if (settings->username) {
-		gchar* userpwd = NULL;
-		if (settings->password)
-			userpwd = g_strdup_printf("%s:%s",
-				settings->username, settings->password);
-		else
-			userpwd = g_strdup_printf("%s",	settings->username);
-		curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
-		g_free(userpwd);
-	}
-	if (settings->verify_ssl_certificate)
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
-	else {
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
-	}
-	if (settings->custom_cacert)
-		curl_easy_setopt(curl, CURLOPT_CAINFO, settings->custom_cacert);
+
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
 	/* send all data to this function  */
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -88,9 +75,6 @@ gboolean caldav_add(caldav_settings* settings, caldav_error* error) {
 	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION,	WriteHeaderCallback);
 	/* we pass our 'headers' struct to the callback function */
 	curl_easy_setopt(curl, CURLOPT_WRITEHEADER, (void *)&headers);
-	/* some servers don't like requests that are made without a user-agent
-	 * field, so we provide one */
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, (char *) &error_buf);
 	if (settings->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
@@ -100,17 +84,18 @@ gboolean caldav_add(caldav_settings* settings, caldav_error* error) {
 	gchar* tmp = random_file_name(settings->file);
 	gchar* s = rebuild_url(settings, NULL);
 	if (g_str_has_suffix(s, "/")) {
-		settings->url = g_strdup_printf("%slibcaldav-%s.ics", s, tmp);
+		url = g_strdup_printf("%slibcaldav-%s.ics", s, tmp);
 	}
 	else {
-		settings->url = g_strdup_printf("%s/libcaldav-%s.ics", s, tmp);
+		url = g_strdup_printf("%s/libcaldav-%s.ics", s, tmp);
 	}
 	g_free(s);
-	/* XXX  settings->url is overwritten with the upload URL. when is the value
-	 * restored ??? */
-	curl_easy_setopt(curl, CURLOPT_URL, settings->url);
 	g_free(tmp);
-	settings->file = verify_uid(settings->file);
+	curl_easy_setopt(curl, CURLOPT_URL, url);
+	tmp = g_strdup(settings->file);
+	g_free(settings->file);
+	settings->file = verify_uid(tmp);
+	g_free(tmp);
 	/* enable uploading */
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, settings->file);
 	curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, strlen(settings->file));
@@ -119,6 +104,7 @@ gboolean caldav_add(caldav_settings* settings, caldav_error* error) {
 	if (res != 0) {
 		error->code = -1;
 		error->str = g_strdup_printf("%s", error_buf);
+		g_free(settings->file);
 		settings->file = NULL;
 		result = TRUE;
 	}

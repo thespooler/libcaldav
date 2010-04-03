@@ -116,15 +116,16 @@ int main(int argc, char **argv) {
 	gchar* url = NULL;
 	gchar* start = NULL;
 	gchar* end = NULL;
-	response result;
+	response* result;
 	CALDAV_RESPONSE res = UNKNOWN;
 	gchar* input = NULL;
 	char** options = NULL;
 	runtime_info* opt;
 	gchar* custom_cacert = NULL;
 
-	opt = g_new0(runtime_info, 1);
-	opt->options = g_new0(debug_curl, 1);
+	/*opt = g_new0(runtime_info, 1);
+	opt->options = g_new0(debug_curl, 1);*/
+	opt = caldav_get_runtime_info();
 	while ((c = getopt(argc, argv, "a:c:de:f:hp:s:u:v?")) != -1) {
 		switch (c) {
 			case 'h':
@@ -254,15 +255,15 @@ int main(int argc, char **argv) {
 	opt->options->verify_ssl_certificate = verify_ssl_certificate;
 	opt->options->custom_cacert = g_strdup(custom_cacert);
 	g_free(custom_cacert);
-	result.msg = NULL;
+	result = caldav_get_response();
 	switch (ACTION) {
-		case GETALL: res = caldav_getall_object(&result, url, opt); break;
+		case GETALL: res = caldav_getall_object(result, url, opt); break;
 		case GET: res = caldav_get_object(
-			&result, make_time_t(start), make_time_t(end), url, opt); break;
+			result, make_time_t(start), make_time_t(end), url, opt); break;
 		case ADD: res = caldav_add_object(input, url, opt); break;
 		case DELETE: res = caldav_delete_object(input, url, opt); break;
 		case MODIFY: res = caldav_modify_object(input, url, opt); break;
-		case GETCALNAME: res = caldav_get_displayname(&result, url, opt); break;
+		case GETCALNAME: res = caldav_get_displayname(result, url, opt); break;
 		case ISCALDAV:
 					res = caldav_enabled_resource(url, opt);
 					if (res)
@@ -306,11 +307,12 @@ int main(int argc, char **argv) {
 	if (res != OK) {
 		fprintf(stderr, "Error\nCode: %ld\n%s\n", opt->error->code, opt->error->str);
 		caldav_free_runtime_info(&opt);
+		caldav_free_response(&result);
 		return 1;
 	}
-	if (result.msg && ACTION != OPTIONS) {
-		fprintf(stdout, "%s", result.msg);
-		gchar* endline = strrchr(result.msg, '\n');
+	if (result->msg && ACTION != OPTIONS) {
+		fprintf(stdout, "%s", result->msg);
+		gchar* endline = strrchr(result->msg, '\n');
 		if (endline) {
 			if (strlen(endline) != 1)
 				fprintf(stdout, "\n");
@@ -329,6 +331,7 @@ int main(int argc, char **argv) {
 		fprintf(stdout, "empty collection\n");
 	}
 	fprintf(stdout, "OK\n");
+	caldav_free_response(&result);
 	caldav_free_runtime_info(&opt);
 	return 0;
 }

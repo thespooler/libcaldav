@@ -29,6 +29,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <curl/curl.h>
 
 /**
  * This function is burrowed from the libcurl documentation
@@ -206,7 +207,7 @@ void init_caldav_settings(caldav_settings* settings) {
 }
 
 /**
- * Free momory assigned to caldav settings structure.
+ * Free memory assigned to caldav settings structure.
  * @param settings @see caldav_settings
  */
 void free_caldav_settings(caldav_settings* settings) {
@@ -295,8 +296,7 @@ void parse_url(caldav_settings* settings, const char* url) {
 			pos = end;
 			end = &(*(end + 1));
 			settings->url = g_strdup(end);
-			if (pos)
-				g_free(pos);
+			g_free(pos);
 		}
 		else {
 			/* no username or password present */
@@ -323,9 +323,10 @@ gchar* get_response_header(
 	gchar* head = NULL;
 	gchar** buf;
 	gchar* header_list;
+	gchar* saveptr;
 
 	header_list = g_strdup(headers);
-	line = strtok(header_list, "\r\n");
+	line = strtok_r(header_list, "\r\n", &saveptr);
 	if (line != NULL) {
 		do  {
 			buf = g_strsplit(line, ":", MAX_TOKENS);
@@ -339,8 +340,9 @@ gchar* get_response_header(
 				}
 			}
 			g_strfreev(buf);
-		} while ((line = strtok(NULL, "\r\n")) != NULL);
+		} while ((line = strtok_r(NULL, "\r\n", &saveptr)) != NULL);
 	}
+	g_free(header_list);
 	if (head)
 		return (lowcase) ? g_ascii_strdown(head, -1) : head;
 	else
@@ -368,6 +370,8 @@ static gchar* parse_caldav_report_wrap(
 	char* pos;
 	char* start;
 	char* object;
+	char* tmp_report;
+	char* tmp;
 	gchar* response;
 	gchar* begin_type;
 	gchar* end_type;
@@ -376,7 +380,8 @@ static gchar* parse_caldav_report_wrap(
 	begin_type = g_strdup_printf("BEGIN:%s", type);
 	end_type = g_strdup_printf("END:%s", type);
 	pos = start = object = response = NULL;
-	while ((pos = strstr(report, element)) != NULL && keep_going) {
+	tmp_report = g_strdup(report);
+	while ((pos = strstr(tmp_report, element)) != NULL && keep_going) {
 		pos = strchr(pos, '>');
 		if (!pos) {
 			break;
@@ -394,9 +399,13 @@ static gchar* parse_caldav_report_wrap(
 			break;
 		}
 		object = g_strndup(start, strlen(start) - strlen(pos));
-		if (response)
+		if (response) {
+			tmp = g_strdup(response);
+			g_free(response);
 			response = g_strdup_printf("%s%s\r\n%s%s\r\n",
-				response, begin_type, object, end_type);
+				tmp, begin_type, object, end_type);
+			g_free(tmp);
+		}
 		else {
 			if (wrap)
 				response = g_strdup_printf("%s%s\r\n%s%s\r\n",
@@ -405,13 +414,18 @@ static gchar* parse_caldav_report_wrap(
 				response = g_strdup_printf("%s\r\n%s%s\r\n",
 					begin_type, object, end_type);
 		}
-		pos = strchr(pos, '>');
-		report = g_strdup(&(*(pos + 1)));
+		if (recursive) {
+			pos = strchr(pos, '>');
+			g_free(tmp_report);
+			tmp_report = g_strdup(&(*(pos + 1)));
+		}
+		else {
+			keep_going = FALSE;
+		}
 		g_free(start);
 		g_free(object);
-		if (!recursive)
-			keep_going = FALSE;
 	}
+	g_free(tmp_report);
 	g_free(begin_type);
 	g_free(end_type);
 	if (wrap)
@@ -523,9 +537,12 @@ gchar* verify_uid(gchar* object) {
 		g_free(tmp);
 		g_free(object);
 	}
-	if (uid)
+	else
 		g_free(uid);
-	newobj = g_strchomp(newobj);
+	/*uid = g_strdup(newobj);
+	g_free(newobj);*/
+	g_strchomp(newobj);
+	/*g_free(uid);*/
 	return newobj;
 }
 
@@ -624,4 +641,41 @@ gchar* rebuild_url(caldav_settings* settings, gchar* uri){
     	url = g_strdup_printf("%s%s", mystr,settings->url);
 
 	return url;
+}
+
+/**
+ * Prepare a curl connection
+ * @param settings caldav_settings
+ * @return CURL
+ */
+CURL* get_curl(caldav_settings* setting) {
+	CURL* curl;
+	gchar* userpwd = NULL;
+	gchar* url = NULL;
+
+	curl = curl_easy_init();
+	if (curl) {
+		if (setting->username) {
+			if (setting->password)
+				userpwd = g_strdup_printf("%s:%s",
+					setting->username, setting->password);
+			else
+				userpwd = g_strdup_printf("%s",	setting->username);
+			curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
+			g_free(userpwd);
+		}
+		if (setting->verify_ssl_certificate)
+			curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
+		else {
+			curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
+			curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+		}
+		if (setting->custom_cacert)
+			curl_easy_setopt(curl, CURLOPT_CAINFO, setting->custom_cacert);
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, __CALDAV_USERAGENT);
+		url = rebuild_url(setting, NULL);
+		curl_easy_setopt(curl, CURLOPT_URL, url);
+		g_free(url);
+	}
+	return (curl) ? curl : NULL;
 }

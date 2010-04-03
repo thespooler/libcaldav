@@ -1,3 +1,13 @@
+libcaldav (0.5.1)
+  * Honor request 2981083. Implement a response_free function
+  * Honor request 2981100. Implement a runtime_info creation function
+  * Fix bug 2981096. A number of memory leaks
+  * Complete refactoring. Implement basic setup of curl instance in a
+    function which all other function uses to ease maintainability and
+    simplicity and to reduce the number of repeated code lines.
+
+-- Michael Rasmussen <mir@datanom.net>  Sat, 3 Apr 2010 03:29:03 +0100
+
 libcaldav (0.5.0)
   * Make library thread-safe. Close bug 2971102.
   * Changed test application accordingly.
