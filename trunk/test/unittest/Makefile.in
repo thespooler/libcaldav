@@ -15,7 +15,6 @@
 
 @SET_MAKE@
 
-
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -36,10 +35,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BUILD_CALDAV_TRUE@bin_PROGRAMS = caldav-test$(EXEEXT)
-subdir = test/src
-DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+@BUILD_UNITTEST_TRUE@bin_PROGRAMS = unittest$(EXEEXT)
+subdir = test/unittest
+DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_prog_doxygen.m4 \
 	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
@@ -53,13 +51,13 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am__caldav_test_SOURCES_DIST = caldav-test.c
-@BUILD_CALDAV_TRUE@am_caldav_test_OBJECTS = caldav-test.$(OBJEXT)
-caldav_test_OBJECTS = $(am_caldav_test_OBJECTS)
-caldav_test_DEPENDENCIES =
-caldav_test_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(caldav_test_LDFLAGS) $(LDFLAGS) -o $@
+am__unittest_SOURCES_DIST = libunit.c
+@BUILD_UNITTEST_TRUE@am_unittest_OBJECTS = libunit.$(OBJEXT)
+unittest_OBJECTS = $(am_unittest_OBJECTS)
+unittest_DEPENDENCIES =
+unittest_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(unittest_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -73,9 +71,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(caldav_test_SOURCES)
-DIST_SOURCES = $(am__caldav_test_SOURCES_DIST)
-HEADERS = $(noinst_HEADERS)
+SOURCES = $(unittest_SOURCES)
+DIST_SOURCES = $(am__unittest_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -226,23 +223,22 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = gnu
-@BUILD_CALDAV_TRUE@INCLUDES = \
-@BUILD_CALDAV_TRUE@	   @CURL_CFLAGS@ \
-@BUILD_CALDAV_TRUE@	   @GLIB_CFLAGS@ \
-@BUILD_CALDAV_TRUE@	   -I$(top_srcdir) \
-@BUILD_CALDAV_TRUE@	   -I$(top_srcdir)/src
+@BUILD_UNITTEST_TRUE@INCLUDES = \
+@BUILD_UNITTEST_TRUE@	   @CURL_CFLAGS@ \
+@BUILD_UNITTEST_TRUE@	   @GLIB_CFLAGS@ \
+@BUILD_UNITTEST_TRUE@	   -I$(top_srcdir) \
+@BUILD_UNITTEST_TRUE@	   -I$(top_srcdir)/src
 
-@BUILD_CALDAV_TRUE@caldav_test_SOURCES = \
-@BUILD_CALDAV_TRUE@		      caldav-test.c 
+@BUILD_UNITTEST_TRUE@unittest_SOURCES = \
+@BUILD_UNITTEST_TRUE@		libunit.c
 
-@BUILD_CALDAV_TRUE@noinst_HEADERS = 
-@BUILD_CALDAV_TRUE@caldav_test_LDFLAGS = \
-@BUILD_CALDAV_TRUE@		      -L$(top_builddir)/src
+@BUILD_UNITTEST_TRUE@unittest_LDFLAGS = \
+@BUILD_UNITTEST_TRUE@		      -L$(top_builddir)/src
 
-@BUILD_CALDAV_TRUE@caldav_test_LDADD = \
-@BUILD_CALDAV_TRUE@		    @CURL_LIBS@ \
-@BUILD_CALDAV_TRUE@		    @GLIB_LIBS@ \
-@BUILD_CALDAV_TRUE@		    -lcaldav
+@BUILD_UNITTEST_TRUE@unittest_LDADD = \
+@BUILD_UNITTEST_TRUE@		    @CURL_LIBS@ \
+@BUILD_UNITTEST_TRUE@		    @GLIB_LIBS@ \
+@BUILD_UNITTEST_TRUE@		    -lcaldav
 
 all: all-am
 
@@ -257,9 +253,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu test/src/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu test/unittest/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu test/src/Makefile
+	  $(AUTOMAKE) --gnu test/unittest/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -321,9 +317,9 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
-caldav-test$(EXEEXT): $(caldav_test_OBJECTS) $(caldav_test_DEPENDENCIES) 
-	@rm -f caldav-test$(EXEEXT)
-	$(caldav_test_LINK) $(caldav_test_OBJECTS) $(caldav_test_LDADD) $(LIBS)
+unittest$(EXEEXT): $(unittest_OBJECTS) $(unittest_DEPENDENCIES) 
+	@rm -f unittest$(EXEEXT)
+	$(unittest_LINK) $(unittest_OBJECTS) $(unittest_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -331,7 +327,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/caldav-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libunit.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -444,7 +440,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(HEADERS)
+all-am: Makefile $(PROGRAMS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \

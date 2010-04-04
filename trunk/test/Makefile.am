@@ -1,5 +1,8 @@
 AUTOMAKE_OPTIONS = gnu
 
-SUBDIRS = ics src
+SUBDIRS = \
+			ics \
+			src \
+			unittest 
 
 EXTRA_DIST = 

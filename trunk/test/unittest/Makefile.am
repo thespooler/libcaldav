@@ -1,23 +1,21 @@
 AUTOMAKE_OPTIONS = gnu
 
-if BUILD_CALDAV
+if BUILD_UNITTEST
 INCLUDES = \
 	   @CURL_CFLAGS@ \
 	   @GLIB_CFLAGS@ \
 	   -I$(top_srcdir) \
 	   -I$(top_srcdir)/src
 
-bin_PROGRAMS = caldav-test
+bin_PROGRAMS = unittest
 
-caldav_test_SOURCES = \
-		      caldav-test.c 
-
-noinst_HEADERS =
-
-caldav_test_LDFLAGS = \
+unittest_SOURCES = \
+		libunit.c
+				
+unittest_LDFLAGS = \
 		      -L$(top_builddir)/src
 
-caldav_test_LDADD = \
+unittest_LDADD = \
 		    @CURL_LIBS@ \
 		    @GLIB_LIBS@ \
 		    -lcaldav
