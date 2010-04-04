@@ -88,6 +88,16 @@ AC_ARG_ENABLE([caldav],
 			esac], [caldav=$BUILD_TEST])
 AM_CONDITIONAL([BUILD_CALDAV], [test x$caldav = xtrue])
 
+# Should we build unit test program
+AC_ARG_ENABLE([unittest], 
+		[AC_HELP_STRING(--enable-unittest, Build unti test application (default=no))],
+		[case "${enableval}" in
+			yes) unittest=true ;;
+			no) unittest=false ;;
+			*) AC_MSG_ERROR([bad value "${enableval}" for --enable-unittest]) ;;
+			esac], [unittest=$BUILD_TEST])
+AM_CONDITIONAL([BUILD_UNITTEST], [test x$unittest = xtrue])
+
 # Build API documentation
 AC_ARG_ENABLE([doc], 
 		[AC_HELP_STRING(--enable-doc, Build API documentation (default=no))],
@@ -105,6 +115,7 @@ AC_CONFIG_COMMANDS(
     echo ""
     echo -e "\tCFLAGS:\t\t\t\t$cflags"
     echo -e "\tBuild caldav-test:\t\t$caldav"
+    echo -e "\tBuild unittest:\t\t\t$unittest"
     echo -e "\tBuild API documentation:\t$doc"
 	echo -e "\tLibrary is linked:\t\t$link"
 	echo ""
@@ -114,6 +125,7 @@ AC_CONFIG_COMMANDS(
 	echo -e "Email addresses can be found in the AUTHORS file."
     echo ""],
     [caldav=${caldav}
+     unittest=${unittest}
      doc=${doc}
      cflags="${CFLAGS}"
 	 if test $DYNAMIC -eq 1; then
@@ -130,4 +142,5 @@ AC_OUTPUT([
 	test/Makefile
 	test/src/Makefile
 	test/ics/Makefile
+	test/unittest/Makefile
 ])

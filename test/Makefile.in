@@ -237,7 +237,11 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = gnu
-SUBDIRS = ics src
+SUBDIRS = \
+			ics \
+			src \
+			unittest 
+
 EXTRA_DIST = 
 all: all-recursive
 

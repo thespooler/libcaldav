@@ -19,7 +19,7 @@
 #  include "config.h"
 #endif
 
-#include "../../src/caldav.h"
+#include "caldav.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -86,7 +86,7 @@ time_t make_time_t(const char* time_elem) {
 	return t;
 }
 
-static char* usage[] = 	{
+static const char* usage[] = 	{
 "caldav-test is part of libcaldav for claws-mails "
 "vcalendar plugin.\nCopyright (C) Michael Rasmussen, 2008.\n"
 "This program is free software; you can redistribute it and/or modify\n"
@@ -99,8 +99,9 @@ static char* usage[] = 	{
 "\t\t-d\tdebug (show request/response)\n"
 "\t\t-e\tend [yyyy/mm/dd]\n"
 "\t\t-f\tfile. Alternative is to use IO redirection (<)\n"
-"\t\t-p\tpassword\n\t\t-u\tusername\n"
+"\t\t-p\tpassword\n"
 "\t\t-s\tstart [yyyy/mm/dd]\n"
+"\t\t-u\tusername\n"
 "\t\t-v\tdisable certificate verification\n"
 "\t\t-h|-?\tusage\n"
 };
@@ -123,8 +124,6 @@ int main(int argc, char **argv) {
 	runtime_info* opt;
 	gchar* custom_cacert = NULL;
 
-	/*opt = g_new0(runtime_info, 1);
-	opt->options = g_new0(debug_curl, 1);*/
 	opt = caldav_get_runtime_info();
 	while ((c = getopt(argc, argv, "a:c:de:f:hp:s:u:v?")) != -1) {
 		switch (c) {

@@ -27,6 +27,6 @@ else
 	automake --add-missing --force-missing --gnu || error automake
 	autoconf --force || error autoconf
 fi
-./configure --enable-maintainer-mode $*
+./configure $*
 
 exit 0
