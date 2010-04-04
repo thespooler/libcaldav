@@ -50,6 +50,21 @@ static const char* usage[] = 	{
 "\t\t-u\tusername\n"
 };
 
+/*
+ * Options can be given in one of three ways:
+ * 1) Entered as options on the command line
+ * 2) Stored in environment variables:
+ *    - LIBCALDAV_UID -> username to use when connection to server
+ *    - LIBCALDAV_PWD -> password, if any, to use when connection to server
+ *    - LIBCALDAV_URL -> complete URL to server. prefixed with either
+ *                       http:// or https://
+ * 3) Stored in a file found in the same directory as the program:
+ *    [server]
+ * 	  password=Big secret
+ *    username=username
+ *    url=http[s]://bar.tld/foo
+ */
+
 #define CONFFILE "caldav-unit-settings.conf"
 
 typedef struct {
@@ -156,7 +171,6 @@ const gchar* get_setting_from_file(CONFIG config) {
 	}
 	else if ((pos = strchr(filename, '/')) != NULL) {
 		/* relative path */
-		//fprintf(stderr, "pos: %s\n", pos);
 		if (filename[0] == '.') {
 			char* tmp = pos;
 			while (tmp) {
@@ -168,7 +182,6 @@ const gchar* get_setting_from_file(CONFIG config) {
 				if (tmp)
 					pos = tmp;
 			}
-			//fprintf(stderr, "pos: %s\n", pos);
 			if (pos == NULL) {
 				pos = strchr(filename, '/');
 			}
@@ -190,10 +203,8 @@ const gchar* get_setting_from_file(CONFIG config) {
 		/* find cwd in PATH */
 		cwd = g_find_program_in_path(filename);
 	}
-	//fprintf(stderr, "current dir: %s\n", cwd);
 	path = g_build_filename(cwd, CONFFILE, NULL);
 	g_free(cwd);
-	//fprintf(stderr, "current dir: %s\n", path);
 	if (g_file_test(path, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR)) {
 		read_file(path);
 		switch (config) {
@@ -411,7 +422,7 @@ void run_tests(settings* s) {
 			fprintf(stdout, "FAIL\n");
 		else
 			fprintf(stdout, "OK\n");
-		if (DEBUG) fprintf(stdout, "%s\n", resp->msg);
+		if (DEBUG) fprintf(stdout, "%s\n", (resp->msg) ? resp->msg : "No object found");
 		g_free(resp->msg);
 		resp->msg = NULL;
 	}
@@ -446,6 +457,5 @@ int main(int argc, char** argv) {
 	}
 	run_tests(setting);
 	settings_free(&setting);
-	//fprintf(stderr, "%s\n%s\n%s\n", argv[0], g_find_program_in_path(argv[0]), g_find_program_in_path(g_get_prgname()));
 	return 0;
 }
