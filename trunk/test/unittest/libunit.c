@@ -270,8 +270,7 @@ time_t make_time_t(const char* time_elem) {
 	return t;
 }
 
-#define TOKEN "UID"
-gboolean compare_object(const gchar* s1, const gchar* s2) {
+gboolean compare_object(const gchar* TOKEN, const gchar* s1, const gchar* s2) {
 	gchar* pos1;
 	gchar* pos2;
 	gchar* id1;
@@ -340,6 +339,8 @@ void run_tests(settings* s) {
 		fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
+	g_free(resp->msg);
+	resp->msg = NULL;
 	fprintf(stdout, "Test caldav_get_server_options:\t\t\t");
 	if ((parts = caldav_get_server_options(url, info)) != NULL) {
 		fprintf(stdout, "OK\n");
@@ -365,21 +366,22 @@ void run_tests(settings* s) {
 		fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
-	fprintf(stdout, "Test caldav_get_object:\t\t\t\t");
+	fprintf(stdout, "Test if object was added:\t\t\t");
 	if (caldav_get_object(resp, make_time_t("2008/04/15"),
 		make_time_t("2008/04/16"), url, info) == OK) {
-		if (compare_object(object, resp->msg))
+		if (compare_object("UID", object, resp->msg))
 			fprintf(stdout, "OK\n");
 		else
 			fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%s\n", resp->msg);
-		g_free(resp->msg);
-		resp->msg = NULL;
 	}
 	else {
 		fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
+	g_free(resp->msg);
+	resp->msg = NULL;
+	g_free(object);
 	g_file_get_contents("../ics/modify.ics", &object, NULL, NULL);
 	fprintf(stdout, "Test caldav_modify_object:\t\t\t");
 	if (caldav_modify_object(object, url, info) == OK) {
@@ -390,21 +392,38 @@ void run_tests(settings* s) {
 		fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
-	fprintf(stdout, "Test caldav_get_object:\t\t\t\t");
+	fprintf(stdout, "Test if object was modified:\t\t\t");
 	if (caldav_get_object(resp, make_time_t("2008/04/16"),
 		make_time_t("2008/04/17"), url, info) == OK) {
-		if (compare_object(object, resp->msg))
+		if (compare_object("DTEND", object, resp->msg))
 			fprintf(stdout, "OK\n");
 		else
 			fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%s\n", resp->msg);
-		g_free(resp->msg);
-		resp->msg = NULL;
 	}
 	else {
 		fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
+	g_free(resp->msg);
+	resp->msg = NULL;
+	fprintf(stdout, "Test caldav_getall_object:\t\t\t");
+	if (caldav_getall_object(resp, url, info) == OK) {
+		fprintf(stdout, "OK\n");
+		if (DEBUG) fprintf(stdout, "%s\n", resp->msg);
+	}
+	else {
+		fprintf(stdout, "FAIL\n");
+		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
+	}
+	fprintf(stdout, "Test if object exists:\t\t\t\t");
+	if (compare_object("UID", object, resp->msg))
+		fprintf(stdout, "FAIL\n");
+	else
+		fprintf(stdout, "OK\n");
+	g_free(resp->msg);
+	resp->msg = NULL;
+	g_free(object);
 	g_file_get_contents("../ics/delete.ics", &object, NULL, NULL);
 	fprintf(stdout, "Test caldav_delete_object:\t\t\t");
 	if (caldav_delete_object(object, url, info) == OK) {
@@ -415,10 +434,10 @@ void run_tests(settings* s) {
 		fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
-	fprintf(stdout, "Test caldav_get_object:\t\t\t\t");
+	fprintf(stdout, "Test if object was deleted:\t\t\t");
 	if (caldav_get_object(resp, make_time_t("2008/04/16"),
 		make_time_t("2008/04/17"), url, info) == OK) {
-		if (compare_object(object, resp->msg))
+		if (compare_object("UID", object, resp->msg))
 			fprintf(stdout, "FAIL\n");
 		else
 			fprintf(stdout, "OK\n");
@@ -430,15 +449,7 @@ void run_tests(settings* s) {
 		fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
-	fprintf(stdout, "Test caldav_getall_object:\t\t\t");
-	if (caldav_getall_object(resp, url, info) == OK) {
-		fprintf(stdout, "OK\n");
-		if (DEBUG) fprintf(stdout, "%s\n", resp->msg);
-	}
-	else {
-		fprintf(stdout, "FAIL\n");
-		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
-	}
+	g_free(object);
 	g_free(url);
 	caldav_free_response(&resp);
 	caldav_free_runtime_info(&info);
