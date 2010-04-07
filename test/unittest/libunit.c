@@ -46,6 +46,7 @@ static const char* usage[] = 	{
 "\t\t-h|-?\tusage\n"
 "\t\t-a\tURL\n"
 "\t\t-d\tEnable debug\n"
+"\t\þ-l\tDebug library\n"
 "\t\t-p\tpassword\n"
 "\t\t-u\tusername\n"
 };
@@ -81,6 +82,7 @@ typedef enum {
 	
 static settings* SETTING = NULL;
 gboolean DEBUG = FALSE;
+gboolean DEBUG_LIB = FALSE;
 
 void settings_free(settings** setting) {
 	settings* s;
@@ -100,7 +102,7 @@ settings* parse_cmdline(int argc, char** argv) {
 	settings* setting;
 
 	setting = g_new0(settings, 1);	
-	while ((c = getopt(argc, argv, "ha:dp:u:?")) != -1) {
+	while ((c = getopt(argc, argv, "ha:dlp:u:?")) != -1) {
 		switch (c) {
 			case 'h':
 			case '?':
@@ -111,6 +113,9 @@ settings* parse_cmdline(int argc, char** argv) {
 				break;
 			case 'd':
 				DEBUG = TRUE;
+				break;
+			case 'l':
+				DEBUG_LIB = TRUE;
 				break;
 			case 'p':
 				setting->pwd = g_strdup(optarg);
@@ -317,6 +322,10 @@ void run_tests(settings* s) {
 	gchar* url;
 	gchar* object;
 	
+	if (DEBUG_LIB) {
+	    info->options->debug = 1;
+	    info->options->trace_ascii = 1;
+	}
 	parts = g_strsplit(s->url, "//", 2);
 	url = g_strconcat(
 		parts[0], "//", s->uid, ":", s->pwd, "@", parts[1], NULL);
@@ -450,6 +459,85 @@ void run_tests(settings* s) {
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
 	g_free(object);
+	fprintf(stdout, "Testing without use locks\n");
+	info->options->use_locking = 0;
+	g_file_get_contents("../ics/add.ics", &object, NULL, NULL);
+	fprintf(stdout, "Test caldav_add_object:\t\t\t\t");
+	if (caldav_add_object(object, url, info) == OK) {
+		fprintf(stdout, "OK\n");
+		if (DEBUG) fprintf(stdout, "Added successfully\n");
+	}
+	else {
+		fprintf(stdout, "FAIL\n");
+		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
+	}
+	fprintf(stdout, "Test if object was added:\t\t\t");
+	if (caldav_get_object(resp, make_time_t("2008/04/15"),
+		make_time_t("2008/04/16"), url, info) == OK) {
+		if (compare_object("UID", object, resp->msg))
+			fprintf(stdout, "OK\n");
+		else
+			fprintf(stdout, "FAIL\n");
+		if (DEBUG) fprintf(stdout, "%s\n", resp->msg);
+	}
+	else {
+		fprintf(stdout, "FAIL\n");
+		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
+	}
+	g_free(resp->msg);
+	resp->msg = NULL;
+	g_free(object);
+	g_file_get_contents("../ics/modify.ics", &object, NULL, NULL);
+	fprintf(stdout, "Test caldav_modify_object:\t\t\t");
+	if (caldav_modify_object(object, url, info) == OK) {
+		fprintf(stdout, "OK\n");
+		if (DEBUG) fprintf(stdout, "Modified successfully\n");
+	}
+	else {
+		fprintf(stdout, "FAIL\n");
+		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
+	}
+	fprintf(stdout, "Test if object was modified:\t\t\t");
+	if (caldav_get_object(resp, make_time_t("2008/04/16"),
+		make_time_t("2008/04/17"), url, info) == OK) {
+		if (compare_object("DTEND", object, resp->msg))
+			fprintf(stdout, "OK\n");
+		else
+			fprintf(stdout, "FAIL\n");
+		if (DEBUG) fprintf(stdout, "%s\n", resp->msg);
+	}
+	else {
+		fprintf(stdout, "FAIL\n");
+		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
+	}
+	g_free(resp->msg);
+	resp->msg = NULL;
+	g_free(object);
+	g_file_get_contents("../ics/delete.ics", &object, NULL, NULL);
+	fprintf(stdout, "Test caldav_delete_object:\t\t\t");
+	if (caldav_delete_object(object, url, info) == OK) {
+		fprintf(stdout, "OK\n");
+		if (DEBUG) fprintf(stdout, "Deleted successfully\n");
+	}
+	else {
+		fprintf(stdout, "FAIL\n");
+		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
+	}
+	fprintf(stdout, "Test if object was deleted:\t\t\t");
+	if (caldav_get_object(resp, make_time_t("2008/04/16"),
+		make_time_t("2008/04/17"), url, info) == OK) {
+		if (compare_object("UID", object, resp->msg))
+			fprintf(stdout, "FAIL\n");
+		else
+			fprintf(stdout, "OK\n");
+		if (DEBUG) fprintf(stdout, "%s\n", (resp->msg) ? resp->msg : "No object found");
+		g_free(resp->msg);
+		resp->msg = NULL;
+	}
+	else {
+		fprintf(stdout, "FAIL\n");
+		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
+	}
 	g_free(url);
 	caldav_free_response(&resp);
 	caldav_free_runtime_info(&info);

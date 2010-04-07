@@ -191,7 +191,10 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 				http_header = curl_slist_append(http_header, "Expect:");
 				http_header = curl_slist_append(
 								http_header, "Transfer-Encoding:");
-				LOCKSUPPORT = caldav_lock_support(settings, &lock_error);
+				if (settings->use_locking)
+					LOCKSUPPORT = caldav_lock_support(settings, &lock_error);
+				else
+					LOCKSUPPORT = FALSE;
 				if (LOCKSUPPORT) {
 					lock_token = caldav_lock_object(url, settings, &lock_error);
 					if (lock_token) {

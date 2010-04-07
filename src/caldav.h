@@ -58,6 +58,7 @@ typedef struct {
 					 	  * 0 or 1
 					 	  */
   int		verify_ssl_certificate;
+  int		use_locking;
   char*		custom_cacert; 
 } debug_curl;
 
