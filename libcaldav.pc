@@ -4,11 +4,11 @@ libdir=${exec_prefix}/lib
 includedir=${prefix}/include
 
 pkglibdir=${libdir}/libcaldav
-pkgincludedir=${includedir}/libcaldav-0.5.1
+pkgincludedir=${includedir}/libcaldav-0.5.2
 
 Name: libcaldav
 Description: libcaldav is a client library for CalDAV
-Version: 0.5.1
+Version: 0.5.2
 
 Cflags: -pthread -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include    
 Libs: -pthread -lgthread-2.0 -lrt -lglib-2.0   -lcurl  

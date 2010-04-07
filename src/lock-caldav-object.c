@@ -118,7 +118,7 @@ gchar* caldav_lock_object(
 		res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 		if (code != 200) {
 			gchar* status = get_tag("status", chunk.memory);
-			if (strstr(status, "423") != NULL) {
+			if (status && strstr(status, "423") != NULL) {
 				error->code = 423;
 				error->str = g_strdup(status);
 			}

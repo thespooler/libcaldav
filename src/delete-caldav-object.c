@@ -216,7 +216,7 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 						lock = -1;
 					}
 				}
-				if (! LOCKSUPPORT || (LOCKSUPPORT && lock_token)) {
+				if (! LOCKSUPPORT || (LOCKSUPPORT && lock_token && lock_error.code != 423)) {
 					curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
 					curl_easy_setopt(curl, CURLOPT_URL, rebuild_url(settings, url));
 					curl_easy_setopt(curl, CURLOPT_POSTFIELDS, NULL);
@@ -232,7 +232,7 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 				g_free(lock_token);
 				if (res != 0 || lock < 0) {
 					/* Is this a lock_error don't change error*/
-					if (lock == 0) {
+					if (lock == 0 || lock_error.code == 423) {
 						error->code = code;
 						error->str = g_strdup(chunk.memory);
 					}
