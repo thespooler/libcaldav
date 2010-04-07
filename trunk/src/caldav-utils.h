@@ -45,6 +45,7 @@ struct _CALDAV_SETTINGS {
 	gboolean verify_ssl_certificate;
 	gchar* custom_cacert;
 	gboolean debug;
+	gboolean use_locking;
 	char trace_ascii;
 	CALDAV_ACTION ACTION;
 	time_t start;

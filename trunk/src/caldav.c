@@ -37,15 +37,16 @@
 
 static void init_runtime(runtime_info* info) {
     if (! info)
-	return;
+		return;
     if (! info->error)
-	info->error = g_new0(caldav_error, 1);
+		info->error = g_new0(caldav_error, 1);
     if (! info->options) {
-	info->options = g_new0(debug_curl, 1);
-	info->options->trace_ascii = 1;
-	info->options->debug = 0;
-	info->options->verify_ssl_certificate = TRUE;
-	info->options->custom_cacert = NULL;
+		info->options = g_new0(debug_curl, 1);
+		info->options->trace_ascii = 1;
+		info->options->debug = 0;
+		info->options->verify_ssl_certificate = TRUE;
+		info->options->use_locking = TRUE;
+		info->options->custom_cacert = NULL;
     }
 }
 
@@ -130,6 +131,10 @@ CALDAV_RESPONSE caldav_add_object(const char* object,
 		settings.trace_ascii = 1;
 	else
 		settings.trace_ascii = 0;
+	if (info->options->use_locking)
+		settings.use_locking = 1;
+	else
+		settings.use_locking = 0;
 	parse_url(&settings, URL);
 	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
@@ -182,6 +187,10 @@ CALDAV_RESPONSE caldav_delete_object(const char* object,
 		settings.trace_ascii = 1;
 	else
 		settings.trace_ascii = 0;
+	if (info->options->use_locking)
+		settings.use_locking = 1;
+	else
+		settings.use_locking = 0;
 	parse_url(&settings, URL);
 	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
@@ -234,6 +243,10 @@ CALDAV_RESPONSE caldav_modify_object(const char* object,
 		settings.trace_ascii = 1;
 	else
 		settings.trace_ascii = 0;
+	if (info->options->use_locking)
+		settings.use_locking = 1;
+	else
+		settings.use_locking = 0;
 	parse_url(&settings, URL);
 	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
@@ -297,6 +310,10 @@ CALDAV_RESPONSE caldav_get_object(response *result,
 		settings.trace_ascii = 1;
 	else
 		settings.trace_ascii = 0;
+	if (info->options->use_locking)
+		settings.use_locking = 1;
+	else
+		settings.use_locking = 0;
 	parse_url(&settings, URL);
 	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
@@ -354,6 +371,10 @@ CALDAV_RESPONSE caldav_getall_object(response* result,
 		settings.trace_ascii = 1;
 	else
 		settings.trace_ascii = 0;
+	if (info->options->use_locking)
+		settings.use_locking = 1;
+	else
+		settings.use_locking = 0;
 	parse_url(&settings, URL);
 	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
@@ -411,6 +432,10 @@ CALDAV_RESPONSE caldav_get_displayname(response* result,
 		settings.trace_ascii = 1;
 	else
 		settings.trace_ascii = 0;
+	if (info->options->use_locking)
+		settings.use_locking = 1;
+	else
+		settings.use_locking = 0;
 	parse_url(&settings, URL);
 	gboolean res = make_caldav_call(&settings, info);
 	if (res) {
@@ -467,6 +492,10 @@ int caldav_enabled_resource(const char* URL, runtime_info* info) {
 		data.trace_ascii = 1;
 	else
 		data.trace_ascii = 0;
+	if (info->options->use_locking)
+		settings.use_locking = 1;
+	else
+		settings.use_locking = 0;
 
 	if (info->options->debug) {
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
@@ -545,6 +574,10 @@ char** caldav_get_server_options(const char* URL, runtime_info* info) {
 		settings.file = NULL;
 		return NULL;
 	}
+	if (info->options->use_locking)
+		settings.use_locking = 1;
+	else
+		settings.use_locking = 0;
 
 	res = caldav_getoptions(curl, &settings, &server_options, info->error, FALSE);
 	if (res) {
