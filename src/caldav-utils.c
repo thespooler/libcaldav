@@ -247,11 +247,11 @@ void free_caldav_settings(caldav_settings* settings) {
  */
 void parse_url(caldav_settings* settings, const char* url) {
 	char* start;
-	char* end;
 	char* pos;
-	char* scheme;
+	char* end;
+	char* login;
 
-	scheme = pos = end = start = NULL;
+	login = pos = end = start = NULL;
 	if (!url)
 		return;
 	if ((pos = strstr(url, "//")) != NULL) {
@@ -260,52 +260,30 @@ void parse_url(caldav_settings* settings, const char* url) {
 				settings->usehttps=TRUE;
 		}
 		start = g_strdup(&(*(pos + 2)));
-		if ((pos = strchr(start, '@')) != NULL) {
+		if ((pos = strrchr(start, '@')) != NULL) {
 			/* username and/or password present */
+			login = g_strndup(start, pos - start);
 			end = pos;
-			if ((pos = strchr(pos, ':')) != NULL) {
-				/* username contains @ */
-				pos = strchr(pos, '@');
-				if (! pos) {
-					g_free(start);
-					return;
-				}
-			}
-			else {
-				pos = end;
-			}
-			end = g_strdup(pos);
-			scheme = g_strndup(start, strlen(start) - strlen(pos));
-			if (start)
-				g_free(start);
-			if ((pos = strchr(scheme, ':')) != NULL) {
-				/* username and password present */
-				settings->username = 
-					g_strndup(scheme, strlen(scheme) - 
-							strlen(pos));
-				pos = &(*(pos + 1));
-				settings->password = g_strdup(pos);
+			if ((pos = strrchr(login, ':')) != NULL) {
+				/* both username and password is present */
+				settings->username = g_strndup(login, pos - login);
+				settings->password = g_strdup(++pos);
 			}
 			else {
 				/* only username present */
-				settings->username = g_strdup(scheme);
+				settings->username = g_strdup(login);
 				settings->password = NULL;
 			}
-			if (scheme)
-				g_free(scheme);
-			pos = end;
-			end = &(*(end + 1));
-			settings->url = g_strdup(end);
-			g_free(pos);
+			g_free(login);
+			settings->url = g_strdup(++end);
 		}
 		else {
 			/* no username or password present */
 			settings->url = g_strdup(start);
-			if (start)
-				g_free(start);
 			settings->username = NULL;
 			settings->password = NULL;
 		}
+		g_free(start);
 	}
 }
 
