@@ -86,8 +86,16 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 		else {
 			long code;
 			res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
-			error->code = code;
-			error->str = g_strdup(headers.memory);
+			/*error->code = code;
+			error->str = g_strdup(headers.memory);*/
+			if (code == 200) {
+				error->code = -1;
+				error->str = g_strdup("URL is not a CalDAV resource");
+			}
+			else {
+				error->code = -4;
+				error->str = g_strdup("Unable to connect");
+			}
 		}
 		g_free(head);
 	}
@@ -104,6 +112,14 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 		 CURLE_SSL_ISSUER_ERROR) && settings->usehttps) {
 		error->code = -2;
 		error->str = g_strdup(error_buf);
+	}
+	else if (res == CURLE_COULDNT_RESOLVE_HOST) {
+		error->code = -3;
+		error->str = g_strdup("Could not resolve host");
+	}
+	else if (res == CURLE_COULDNT_CONNECT) {
+		error->code = -4;
+		error->str = g_strdup("Unable to connect");
 	}
 	else {
 		error->code = -1;
