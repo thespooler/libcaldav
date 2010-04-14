@@ -86,15 +86,13 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 		else {
 			long code;
 			res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
-			/*error->code = code;
-			error->str = g_strdup(headers.memory);*/
 			if (code == 200) {
 				error->code = -1;
 				error->str = g_strdup("URL is not a CalDAV resource");
 			}
 			else {
-				error->code = -4;
-				error->str = g_strdup("Unable to connect");
+				error->code = -1 * code;
+				error->str = g_strdup(headers.memory);
 			}
 		}
 		g_free(head);
