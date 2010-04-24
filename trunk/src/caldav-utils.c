@@ -30,6 +30,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <curl/curl.h>
+#include <ctype.h>
 
 /**
  * This function is burrowed from the libcurl documentation
@@ -240,6 +241,54 @@ void free_caldav_settings(caldav_settings* settings) {
 	settings->end = 0;
 }
 
+static gchar* place_after_hostname(const gchar* start, const gchar* stop) {
+	gchar* newpos = NULL;
+	gchar* pos = (gchar *) stop;
+	gboolean digit = TRUE;
+	
+	if (pos && stop && strcmp(start, pos) != 0) {
+		while (*pos != ':' && strcmp(start, pos) != 0)
+			--pos;
+		if (pos > start) {
+			gchar* tmp = (gchar *) pos + 1;
+			/* is pos++ a port number */
+			while (*tmp != '/' && digit) {
+				if (isdigit(*tmp) != 0) {
+					digit = TRUE;
+					tmp++;
+				}
+				else
+					digit = FALSE;
+			}
+			if (digit) {
+				/* pos was a port number */
+				while (*pos != '@' && strcmp(start, pos) != 0)
+					--pos;
+				if (strcmp(start, pos) != 0)
+					newpos = pos;
+			}
+			else {
+				while (*pos != '@' && pos != stop)
+					pos++;
+				if (pos != stop)
+					newpos = pos;
+			}
+		}
+		else {
+			/* is a username present */
+			gchar* tmp = NULL;
+			while (*pos != '/' && pos != stop) {
+				if (*pos == '@')
+					tmp = pos;
+				pos++;
+			}
+			if (tmp && pos != stop)
+				newpos = tmp;
+		}
+	}
+	return newpos;
+}
+
 /**
  * Parse URL
  * @param settings @see caldav_settings
@@ -260,7 +309,7 @@ void parse_url(caldav_settings* settings, const char* url) {
 				settings->usehttps=TRUE;
 		}
 		start = g_strdup(&(*(pos + 2)));
-		if ((pos = strrchr(start, '@')) != NULL) {
+		if ((pos = place_after_hostname(start, strrchr(start, '\0') - 1)) != NULL) {
 			/* username and/or password present */
 			login = g_strndup(start, pos - start);
 			end = pos;
