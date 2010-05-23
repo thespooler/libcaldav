@@ -105,6 +105,8 @@ gchar* caldav_lock_object(
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, lock_query);
 	curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, strlen(lock_query));
 	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "LOCK");
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+	curl_easy_setopt(curl, CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL);
 	res = curl_easy_perform(curl);
 	curl_slist_free_all(http_header);
 	if (res != 0) {
@@ -206,6 +208,8 @@ gboolean caldav_unlock_object(gchar* lock_token, gchar* URI,
 	g_free(url);
 	/* enable uploading */
 	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "UNLOCK");
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+	curl_easy_setopt(curl, CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL);
 	res = curl_easy_perform(curl);
 	curl_slist_free_all(http_header);
 	if (res != 0) {

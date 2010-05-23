@@ -22,6 +22,7 @@
 
 #include "caldav-utils.h"
 #include "caldav.h"
+#include <glib.h>
 
 /**
  * Function for getting all events from collection.

@@ -78,7 +78,8 @@ libcaldav_la_DEPENDENCIES =
 am_libcaldav_la_OBJECTS = caldav.lo add-caldav-object.lo \
 	delete-caldav-object.lo modify-caldav-object.lo \
 	get-caldav-report.lo get-display-name.lo caldav-utils.lo \
-	md5.lo options-caldav-server.lo lock-caldav-object.lo
+	md5.lo options-caldav-server.lo lock-caldav-object.lo \
+	get-freebusy-report.lo
 libcaldav_la_OBJECTS = $(am_libcaldav_la_OBJECTS)
 libcaldav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -277,7 +278,9 @@ libcaldav_la_SOURCES = \
 			options-caldav-server.c \
 			options-caldav-server.h \
 			lock-caldav-object.c \
-			lock-caldav-object.h 
+			lock-caldav-object.h \
+			get-freebusy-report.c \
+			get-freebusy-report.h
 
 libcaldav_includedir = $(includedir)/libcaldav-@VERSION@
 libcaldav_include_HEADERS = caldav.h
@@ -381,6 +384,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/delete-caldav-object.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get-caldav-report.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get-display-name.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get-freebusy-report.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lock-caldav-object.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/modify-caldav-object.Plo@am__quote@

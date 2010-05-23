@@ -33,7 +33,9 @@ libcaldav_la_SOURCES = \
 			options-caldav-server.c \
 			options-caldav-server.h \
 			lock-caldav-object.c \
-			lock-caldav-object.h 
+			lock-caldav-object.h \
+			get-freebusy-report.c \
+			get-freebusy-report.h
 
 libcaldav_includedir=$(includedir)/libcaldav-@VERSION@
 libcaldav_include_HEADERS = caldav.h
