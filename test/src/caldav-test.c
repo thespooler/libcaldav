@@ -283,7 +283,7 @@ int main(int argc, char **argv) {
 	}
 	if (ACTION == GET || ACTION == FREEBUSY) {
 		if (start == NULL || end == NULL) {
-			fprintf(stderr, "Error: Option '-a get' requires option e and s\n");
+			fprintf(stderr, "Error: Option '-a get' or '-a freebusy' requires option e and s\n");
 			fprintf(stderr, "%s", usage[0]);
 			caldav_free_runtime_info(&opt);
 			return 1;

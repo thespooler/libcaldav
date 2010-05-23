@@ -275,6 +275,31 @@ time_t make_time_t(const char* time_elem) {
 	return t;
 }
 
+gboolean compare_freebusy(const gchar* s1, const gchar* s2) {
+	const char* TOKEN = "FREEBUSY:";
+	gchar* pos1;
+	gchar* pos2;
+	gchar* id1;
+
+	if (! s1 && ! s2)
+		return TRUE;
+	if (! s1 || ! s2)
+		return FALSE;
+	pos1 = strstr(s2, TOKEN);
+	if (! pos1)
+		return FALSE;
+	pos1 += strlen(TOKEN);
+	pos2 = strchr(pos1, '\n');
+	if (! pos2)
+		return FALSE;
+	if (*(pos2 - 1) == '\r')
+		pos2--;
+	id1 = g_strndup(pos1, pos2 - pos1);
+	int res = strcmp(s1, id1);
+	g_free(id1);
+	return (res == 0);
+}
+
 gboolean compare_object(const gchar* TOKEN, const gchar* s1, const gchar* s2) {
 	gchar* pos1;
 	gchar* pos2;
@@ -391,6 +416,21 @@ void run_tests(settings* s) {
 	g_free(resp->msg);
 	resp->msg = NULL;
 	g_free(object);
+	fprintf(stdout, "Test FREEBUSY search the same day:\t\t");
+	if (caldav_get_freebusy(resp, make_time_t("2008/04/15"),
+		make_time_t("2008/04/16"), url, info) == OK) {
+			if (compare_freebusy("20080415T151500Z/20080415T162500", resp->msg))
+				fprintf(stdout, "OK\n");
+			else
+				fprintf(stdout, "FAIL\n");
+		if (DEBUG) fprintf(stdout, "%s\n", resp->msg);
+	}
+	else {
+		fprintf(stdout, "FAIL\n");
+		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
+	}
+	g_free(resp->msg);
+	resp->msg = NULL;
 	g_file_get_contents("../ics/modify.ics", &object, NULL, NULL);
 	fprintf(stdout, "Test caldav_modify_object:\t\t\t");
 	if (caldav_modify_object(object, url, info) == OK) {
@@ -459,7 +499,7 @@ void run_tests(settings* s) {
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
 	g_free(object);
-	fprintf(stdout, "Testing without use locks\n");
+	fprintf(stdout, "\nTesting without using locks\n");
 	info->options->use_locking = 0;
 	g_file_get_contents("../ics/add.ics", &object, NULL, NULL);
 	fprintf(stdout, "Test caldav_add_object:\t\t\t\t");
@@ -487,6 +527,21 @@ void run_tests(settings* s) {
 	g_free(resp->msg);
 	resp->msg = NULL;
 	g_free(object);
+/*	fprintf(stdout, "Test FREEBUSY search the same day:\t\t");
+	if (caldav_get_freebusy(resp, make_time_t("2008/04/15"),
+		make_time_t("2008/04/16"), url, info) == OK) {
+			if (compare_freebusy("20080415T151500Z/20080415T162500", resp->msg))
+				fprintf(stdout, "OK\n");
+			else
+				fprintf(stdout, "FAIL\n");
+		if (DEBUG) fprintf(stdout, "%s\n", resp->msg);
+	}
+	else {
+		fprintf(stdout, "FAIL\n");
+		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
+	}
+	g_free(resp->msg);
+	resp->msg = NULL;*/
 	g_file_get_contents("../ics/modify.ics", &object, NULL, NULL);
 	fprintf(stdout, "Test caldav_modify_object:\t\t\t");
 	if (caldav_modify_object(object, url, info) == OK) {
