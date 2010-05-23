@@ -96,6 +96,8 @@ gboolean caldav_getname(caldav_settings* settings, caldav_error* error) {
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	}
 	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PROPFIND");
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+	curl_easy_setopt(curl, CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL);
 	res = curl_easy_perform(curl);
 	if (res != 0) {
 		error->code = -1;

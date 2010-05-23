@@ -131,6 +131,8 @@ gboolean caldav_modify(caldav_settings* settings, caldav_error* error) {
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, search);
 	curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, strlen(search));
 	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "REPORT");
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+	curl_easy_setopt(curl, CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL);
 	res = curl_easy_perform(curl);
 	curl_slist_free_all(http_header);
 	http_header = NULL;
@@ -225,6 +227,8 @@ gboolean caldav_modify(caldav_settings* settings, caldav_error* error) {
 						curl_easy_setopt(curl, CURLOPT_POSTFIELDS, settings->file);
 						curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, 
 									strlen(settings->file));
+						curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+						curl_easy_setopt(curl, CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL);
 						curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
 						res = curl_easy_perform(curl);
 						if (LOCKSUPPORT && lock_token) {

@@ -29,6 +29,7 @@
 #include "modify-caldav-object.h"
 #include "get-display-name.h"
 #include "options-caldav-server.h"
+#include "get-freebusy-report.h"
 #include <curl/curl.h>
 #include <glib.h>
 #include <stdio.h>
@@ -97,6 +98,7 @@ static gboolean make_caldav_call(caldav_settings* settings,
 		case DELETE: result = caldav_delete(settings, info->error); break;
 		case MODIFY: result = caldav_modify(settings, info->error); break;
 		case GETCALNAME: result = caldav_getname(settings, info->error); break;
+		case FREEBUSY: result = caldav_freebusy(settings, info->error); break;
 		default: break;
 	}
 	return result;
@@ -143,6 +145,7 @@ CALDAV_RESPONSE caldav_add_object(const char* object,
 				case 403: caldav_response = FORBIDDEN; break;
 				case 409: caldav_response = CONFLICT; break;
 				case 423: caldav_response = LOCKED; break;
+				case 501: caldav_response = NOTIMPLEMENTED; break;
 				default: caldav_response = CONFLICT; break;
 			}
 		}
@@ -199,6 +202,7 @@ CALDAV_RESPONSE caldav_delete_object(const char* object,
 				case 403: caldav_response = FORBIDDEN; break;
 				case 409: caldav_response = CONFLICT; break;
 				case 423: caldav_response = LOCKED; break;
+				case 501: caldav_response = NOTIMPLEMENTED; break;
 				default: caldav_response = CONFLICT; break;
 			}
 		}
@@ -255,6 +259,7 @@ CALDAV_RESPONSE caldav_modify_object(const char* object,
 				case 403: caldav_response = FORBIDDEN; break;
 				case 409: caldav_response = CONFLICT; break;
 				case 423: caldav_response = LOCKED; break;
+				case 501: caldav_response = NOTIMPLEMENTED; break;
 				default: caldav_response = CONFLICT; break;
 			}
 		}
@@ -323,6 +328,7 @@ CALDAV_RESPONSE caldav_get_object(response *result,
 				case 403: caldav_response = FORBIDDEN; break;
 				case 409: caldav_response = CONFLICT; break;
 				case 423: caldav_response = LOCKED; break;
+				case 501: caldav_response = NOTIMPLEMENTED; break;
 				default: caldav_response = CONFLICT; break;
 			}
 		}
@@ -384,6 +390,7 @@ CALDAV_RESPONSE caldav_getall_object(response* result,
 				case 403: caldav_response = FORBIDDEN; break;
 				case 409: caldav_response = CONFLICT; break;
 				case 423: caldav_response = LOCKED; break;
+				case 501: caldav_response = NOTIMPLEMENTED; break;
 				default: caldav_response = CONFLICT; break;
 			}
 		}
@@ -445,6 +452,7 @@ CALDAV_RESPONSE caldav_get_displayname(response* result,
 				case 403: caldav_response = FORBIDDEN; break;
 				case 409: caldav_response = CONFLICT; break;
 				case 423: caldav_response = LOCKED; break;
+				case 501: caldav_response = NOTIMPLEMENTED; break;
 				default: caldav_response = CONFLICT; break;
 			}
 		}
@@ -509,6 +517,76 @@ int caldav_enabled_resource(const char* URL, runtime_info* info) {
 }
 
 /**
+ * Function for getting free/busy information.
+ * @param result A pointer to struct _response where the result is to stored.
+ * @see response. Caller is responsible for freeing the memory.
+ * @param start time_t variable specifying start and end for range. Both
+ * are included in range.
+ * @param end time_t variable specifying start and end for range. Both
+ * are included in range.
+ * @param URL Defines CalDAV resource. Receiver is responsible for freeing
+ * the memory. [http://][username[:password]@]host[:port]/url-path.
+ * See (RFC1738).
+ * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
+ */
+CALDAV_RESPONSE caldav_get_freebusy(response *result,
+				  time_t start,
+				  time_t end,
+				  const char* URL,
+				  runtime_info* info) {
+	caldav_settings settings;
+	CALDAV_RESPONSE caldav_response;
+
+	g_return_val_if_fail(info != NULL, TRUE);
+
+	init_runtime(info);
+	if (!result) {
+		result = malloc(sizeof(response *));
+		memset(result, '\0', sizeof(response *));
+	}
+	init_caldav_settings(&settings);
+	settings.ACTION = FREEBUSY;
+	settings.start = start;
+	settings.end = end;
+	if (info->options->debug)
+		settings.debug = TRUE;
+	else
+		settings.debug = FALSE;
+	if (info->options->trace_ascii)
+		settings.trace_ascii = 1;
+	else
+		settings.trace_ascii = 0;
+	if (info->options->use_locking)
+		settings.use_locking = 1;
+	else
+		settings.use_locking = 0;
+	parse_url(&settings, URL);
+	gboolean res = make_caldav_call(&settings, info);
+	if (res) {
+		result->msg = NULL;
+		if (info->error->code > 0) {
+			switch (info->error->code) {
+				case 403: caldav_response = FORBIDDEN; break;
+				case 409: caldav_response = CONFLICT; break;
+				case 423: caldav_response = LOCKED; break;
+				case 501: caldav_response = NOTIMPLEMENTED; break;
+				default: caldav_response = CONFLICT; break;
+			}
+		}
+		else {
+			/* fall-back to conflicting state */
+			caldav_response = CONFLICT;
+		}
+	}
+	else {
+		result->msg = g_strdup(settings.file);
+		caldav_response = OK;
+	}
+	free_caldav_settings(&settings);
+	return caldav_response;
+}
+
+/**
  * Function which supports sending various options inside the library.
  * @param curl_options A struct debug_curl. See debug_curl.
  */
@@ -516,7 +594,7 @@ void caldav_set_options(debug_curl curl_options) {
 }
 
 /** 
- * Function to call in case of errors.
+ * @deprecated Function to call in case of errors.
  * Caller provides a pointer to a local caldav_error structure.
  * Caldav_get_error will initialize pointer if NULL.
  * Caller is responsible for freeing returned memory.

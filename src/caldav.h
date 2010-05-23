@@ -123,6 +123,7 @@ typedef enum {
 	UNKNOWN,
 	ADD,
 	DELETE,
+	FREEBUSY,
 	MODIFY,
 	GET,
 	GETALL,
@@ -143,7 +144,8 @@ typedef enum {
 	OK,
 	FORBIDDEN,
 	CONFLICT,
-	LOCKED
+	LOCKED,
+	NOTIMPLEMENTED
 } CALDAV_RESPONSE;
 
 
@@ -250,6 +252,25 @@ CALDAV_RESPONSE caldav_get_displayname(response* result,
  * detechted.
  */
 int caldav_enabled_resource(const char* URL, runtime_info* info);
+
+/**
+ * Function for getting free/busy information.
+ * @param result A pointer to struct _response where the result is to stored.
+ * @see response. Caller is responsible for freeing the memory.
+ * @param start time_t variable specifying start and end for range. Both
+ * are included in range.
+ * @param end time_t variable specifying start and end for range. Both
+ * are included in range.
+ * @param URL Defines CalDAV resource. Receiver is responsible for freeing
+ * the memory. [http://][username[:password]@]host[:port]/url-path.
+ * See (RFC1738).
+ * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
+ */
+CALDAV_RESPONSE caldav_get_freebusy(response *result,
+				  					time_t start,
+				  					time_t end,
+				  					const char* URL,
+				  					runtime_info* info);
 
 /** 
  * @deprecated Always returns an initialized empty caldav_error

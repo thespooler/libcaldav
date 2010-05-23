@@ -71,18 +71,58 @@ gchar* read_stream(FILE* stream, gchar* mem) {
 
 time_t make_time_t(const char* time_elem) {
 	struct tm datetime = {0,0,0,0,0,0,0,0,0,0,NULL};
-	struct tm* tmp;
+	//struct tm* tmp;
 	gchar** elem;
 	time_t t;
 
-	t = time(NULL);
-	tmp = localtime(&t);
+	//t = time(NULL);
+	//tmp = localtime(&t);
+	elem = g_strsplit(time_elem, "/", 3);
+	if (g_strv_length(elem) == 3) {
+	    datetime.tm_year = atoi(elem[0]) - 1900;
+	    datetime.tm_mon = atoi(elem[1]) - 1;
+	    datetime.tm_mday = atoi(elem[2]);
+	    t = mktime(&datetime);
+	}
+	g_strfreev(elem);
+	return t;
+}
+
+/* [yyyy/mm/dd[ hh/mm[/ss[/z]]] */
+time_t make_fbtime_t(const char* time_elem) {
+	struct tm datetime = {0,0,0,0,0,0,0,0,0,0,NULL};
+	gboolean utc = FALSE;
+	gchar** elem;
+	gchar** dt;
+	time_t t;
+	guint length;
+
+	dt = g_strsplit(time_elem, " ", 2);
+	length = g_strv_length(dt);
+	if (length > 1) {
+		elem = g_strsplit(dt[1], "/", 4);
+		length = g_strv_length(elem);
+		datetime.tm_hour = atoi(elem[0]);
+		datetime.tm_min = atoi(elem[1]);
+		if (length > 2)
+			datetime.tm_sec = atoi(elem[2]);
+		if (length > 3 && strcasecmp(elem[3], "z") == 0)
+			utc = TRUE;
+		g_strfreev(elem);
+	}
 	elem = g_strsplit(time_elem, "/", 3);
 	datetime.tm_year = atoi(elem[0]) - 1900;
 	datetime.tm_mon = atoi(elem[1]) - 1;
 	datetime.tm_mday = atoi(elem[2]);
 	g_strfreev(elem);
-	t = mktime(&datetime);
+	if (utc) {
+		t = mktime(&datetime);
+		struct tm* utc_time = gmtime(&t);
+		t = mktime(utc_time);
+		//g_free(utc_time);
+	}
+	else
+		t = mktime(&datetime);
 	return t;
 }
 
@@ -94,13 +134,13 @@ static const char* usage[] = 	{
 "the Free Software Foundation; either version 3 of the License, or\n"
 "(at your option) any later version.\n"
 "\nusage:\n\tcaldav-test [Options] URL\n"
-"\n\tOptions:\n\t\t-a\taction [is-caldav|add|delete|modify|get|get-all|displayname|options]\n"
+"\n\tOptions:\n\t\t-a\taction [is-caldav|add|delete|modify|get|get-all|displayname|options|freebusy]\n"
 "\t\t-c\tprovide custom cacert (path to cert)\n"
 "\t\t-d\tdebug (show request/response)\n"
-"\t\t-e\tend [yyyy/mm/dd]\n"
+"\t\t-e\tend [yyyy/mm/dd]. For FREEBUSY [yyyy/mm/dd[ hh/mm[/ss[/z]]]\n"
 "\t\t-f\tfile. Alternative is to use IO redirection (<)\n"
 "\t\t-p\tpassword\n"
-"\t\t-s\tstart [yyyy/mm/dd]\n"
+"\t\t-s\tstart [yyyy/mm/dd]. For FREEBUSY [yyyy/mm/dd[ hh/mm[/ss[/z]]]\n"
 "\t\t-u\tusername\n"
 "\t\t-v\tdisable certificate verification\n"
 "\t\t-h|-?\tusage\n"
@@ -155,6 +195,9 @@ int main(int argc, char **argv) {
 				}
 				else if (strcmp("options", optarg) == 0) {
 					ACTION = OPTIONS;
+				}
+				else if (strcmp("freebusy", optarg) == 0) {
+					ACTION = FREEBUSY;
 				}
 				else {
 					fprintf(stderr, "Unknown action: %s\n", optarg);
@@ -213,7 +256,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	if (ACTION != GETALL && ACTION != GET && ACTION != GETCALNAME &&
-			ACTION != ISCALDAV && ACTION != OPTIONS) {
+			ACTION != ISCALDAV && ACTION != OPTIONS && ACTION != FREEBUSY) {
 		struct stat sb;
 		if (fstat(fileno(stdin), &sb) == -1) {
 			if (!stream) {
@@ -238,7 +281,7 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 	}
-	if (ACTION == GET) {
+	if (ACTION == GET || ACTION == FREEBUSY) {
 		if (start == NULL || end == NULL) {
 			fprintf(stderr, "Error: Option '-a get' requires option e and s\n");
 			fprintf(stderr, "%s", usage[0]);
@@ -259,6 +302,8 @@ int main(int argc, char **argv) {
 		case GETALL: res = caldav_getall_object(result, url, opt); break;
 		case GET: res = caldav_get_object(
 			result, make_time_t(start), make_time_t(end), url, opt); break;
+		case FREEBUSY: res = caldav_get_freebusy(
+			result, make_fbtime_t(start), make_fbtime_t(end), url, opt); break;
 		case ADD: res = caldav_add_object(input, url, opt); break;
 		case DELETE: res = caldav_delete_object(input, url, opt); break;
 		case MODIFY: res = caldav_modify_object(input, url, opt); break;
@@ -274,6 +319,7 @@ int main(int argc, char **argv) {
 								case 403: res = FORBIDDEN; break;
 								case 409: res = CONFLICT; break;
 								case 423: res = LOCKED; break;
+								case 501: res = NOTIMPLEMENTED; break;
 								default: res = CONFLICT; break;
 							}
 						}
@@ -292,6 +338,7 @@ int main(int argc, char **argv) {
 								case 403: res = FORBIDDEN; break;
 								case 409: res = CONFLICT; break;
 								case 423: res = LOCKED; break;
+								case 501: res = NOTIMPLEMENTED; break;
 								default: res = CONFLICT; break;
 							}
 						}
@@ -326,7 +373,7 @@ int main(int argc, char **argv) {
 		}
 		g_strfreev(tmp);
 	}
-	else if (ACTION == GET || ACTION == GETALL || ACTION == GETCALNAME) {
+	else if (ACTION == GET || ACTION == GETALL || ACTION == GETCALNAME || ACTION == FREEBUSY) {
 		fprintf(stdout, "empty collection\n");
 	}
 	fprintf(stdout, "OK\n");

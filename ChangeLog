@@ -1,9 +1,17 @@
+libcaldav (0.6.0)
+  * Refactored to properly handle URL schema. Also fixes bug 2985320
+  * More accurate error message in case of unresolable host or unable
+    to get a connection. fixes feature request 2985321
+  * Added support for FREEBUSY search
+
+-- Michael Rasmussen <mir@datanom.net>  Mon, 12 Apr 2010 12:15:03 +0100
+
 libcaldav (0.5.2)
   * Added a unit like testing framework
   * Make the use of locking configurable
   * Extend testing framework to test for this
 
--- Michael Rasmussen <mir@datanom.net>  Mon, 8 Apr 2010 12:15:03 +0100
+-- Michael Rasmussen <mir@datanom.net>  Thu, 8 Apr 2010 12:15:03 +0100
 
 libcaldav (0.5.1)
   * Honor request 2981083. Implement a response_free function

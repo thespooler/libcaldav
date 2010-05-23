@@ -46,7 +46,7 @@ static const char* usage[] = 	{
 "\t\t-h|-?\tusage\n"
 "\t\t-a\tURL\n"
 "\t\t-d\tEnable debug\n"
-"\t\þ-l\tDebug library\n"
+"\t\t-l\tDebug library\n"
 "\t\t-p\tpassword\n"
 "\t\t-u\tusername\n"
 };
