@@ -1,3 +1,9 @@
+libcaldav (0.6.2)
+  * Fix bug to be able to handle HTTP HEADER lines split
+    over multiple lines. Patch provided by Timothy Pearson
+
+-- Michael Rasmussen <mir@datanom.net>  Tue, 25 May 2010 22:51:03 +0100
+
 libcaldav (0.6.1)
   * Fix redirection bug to fully support Zimbra server. Patch
     provided by Timothy Pearson

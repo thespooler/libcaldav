@@ -348,6 +348,7 @@ gchar* get_response_header(
 		const char* header, gchar* headers, gboolean lowcase) {
 	gchar* line;
 	gchar* head = NULL;
+	gchar* oldhead = NULL;
 	gchar** buf;
 	gchar* header_list;
 	gchar* saveptr;
@@ -359,11 +360,15 @@ gchar* get_response_header(
 			buf = g_strsplit(line, ":", MAX_TOKENS);
 			if (buf[1] != NULL) {
 				if (g_ascii_strcasecmp(buf[0], header) == 0) {
-					head = g_strdup(buf[1]);
+					if (head) {
+						oldhead = head;
+						head = g_strconcat(head, ", ", buf[1], NULL);
+						g_free(oldhead);
+					}
+					else
+						head = g_strdup(buf[1]);
 					if (head)
 						g_strstrip(head);
-					g_strfreev(buf);
-					break;
 				}
 			}
 			g_strfreev(buf);
