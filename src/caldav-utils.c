@@ -694,6 +694,13 @@ CURL* get_curl(caldav_settings* setting) {
 			else
 				userpwd = g_strdup_printf("%s",	setting->username);
 			curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd);
+			/* 
+			 * Use most secure way to authenticate
+			 * This is a convenience macro that sets all bits and thus
+			 * makes libcurl pick any it finds suitable. libcurl will
+			 * automatically select the one it finds most secure.
+			 */
+			curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
 			g_free(userpwd);
 		}
 		if (setting->verify_ssl_certificate)
