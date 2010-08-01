@@ -121,6 +121,9 @@ gboolean caldav_getname(caldav_settings* settings, caldav_error* error) {
 			/* Maybe namespace prefixed */
 			if (!displayname) {
 				displayname = get_tag("D:displayname", chunk.memory);
+				if (!displayname) {
+					displayname = get_tag("d:displayname", chunk.memory);
+				}
 			}
 			settings->file = (displayname) ? 
 					g_strdup(displayname) : g_strdup("");
