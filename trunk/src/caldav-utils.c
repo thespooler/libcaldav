@@ -631,6 +631,9 @@ gchar* get_etag(gchar* text) {
 	/* Maybe namespace prefixed */
 	if (!etag) {
 		etag = get_tag("D:getetag", text);
+		if (!etag) {
+			etag = get_tag("d:getetag", text);
+		}
 	}
 	return etag;
 }
