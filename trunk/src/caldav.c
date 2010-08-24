@@ -35,8 +35,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <gnutls/gnutls.h>
+#include <gcrypt.h>
+#include <pthread.h>
+#include <errno.h>
+
+GCRY_THREAD_OPTION_PTHREAD_IMPL;
 
 static void init_runtime(runtime_info* info) {
+	gcry_control (GCRYCTL_SET_THREAD_CBS, &gcry_threads_pthread);
+    gnutls_global_init();
     if (! info)
 		return;
     if (! info->error)
