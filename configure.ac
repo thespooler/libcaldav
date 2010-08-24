@@ -56,7 +56,7 @@ AM_PROG_LIBTOOL
 AC_PROG_INSTALL
 
 # Checks for libraries.
-PKG_CHECK_MODULES(CURL, [libcurl >= 7.15.5])
+PKG_CHECK_MODULES(CURL, [libcurl >= 7.15.5 gnutls])
 AC_SUBST(CURL_CFLAGS)
 AC_SUBST(CURL_LIBS)
 
@@ -70,6 +70,8 @@ AC_SUBST(GLIB_LIBS)
 
 # Checks for header files.
 AC_HEADER_STDC
+AC_CHECK_HEADER(gcrypt.h, [], AC_MSG_ERROR([libgcrypt was not found]))
+AC_CHECK_HEADER(errno.h, [], AC_MSG_ERROR([errno.h was not found]))
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
