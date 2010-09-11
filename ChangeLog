@@ -1,6 +1,10 @@
 libcaldav (0.6.2)
   * Fix bug to be able to handle HTTP HEADER lines split
     over multiple lines. Patch provided by Timothy Pearson
+  * Added more robust checking for response codes.
+  * Fixed a bug which caused an improper default runtime init setting.
+  * Added support for FreeBusy requests.
+  * Skip making bzip2 compressed distribution tarballs
 
 -- Michael Rasmussen <mir@datanom.net>  Tue, 25 May 2010 22:51:03 +0100
 
