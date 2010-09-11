@@ -202,6 +202,7 @@ void init_caldav_settings(caldav_settings* settings) {
 	settings->verify_ssl_certificate = TRUE;
 	settings->debug = FALSE;
 	settings->trace_ascii = TRUE;
+	settings->use_locking = TRUE;
 	settings->ACTION = UNKNOWN;
 	settings->start = 0;
 	settings->end = 0;
@@ -236,6 +237,7 @@ void free_caldav_settings(caldav_settings* settings) {
 	settings->usehttps = FALSE;
 	settings->debug = FALSE;
 	settings->trace_ascii = TRUE;
+	settings->use_locking = TRUE;
 	settings->ACTION = UNKNOWN;
 	settings->start = 0;
 	settings->end = 0;

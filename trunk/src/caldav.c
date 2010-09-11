@@ -53,8 +53,8 @@ static void init_runtime(runtime_info* info) {
 		info->options = g_new0(debug_curl, 1);
 		info->options->trace_ascii = 1;
 		info->options->debug = 0;
-		info->options->verify_ssl_certificate = TRUE;
-		info->options->use_locking = TRUE;
+		info->options->verify_ssl_certificate = 1;
+		info->options->use_locking = 1;
 		info->options->custom_cacert = NULL;
     }
 }
@@ -690,6 +690,11 @@ runtime_info* caldav_get_runtime_info() {
 	rt_info = g_new0(runtime_info, 1);
 	rt_info->error = g_new0(caldav_error, 1);
 	rt_info->options = g_new0(debug_curl, 1);
+	rt_info->options->trace_ascii = 1;
+  	rt_info->options->debug = 0;
+  	rt_info->options->verify_ssl_certificate = 1;
+  	rt_info->options->use_locking = 1;
+  	rt_info->options->custom_cacert = NULL; 
 	
 	return rt_info;
 }

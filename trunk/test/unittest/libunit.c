@@ -401,8 +401,8 @@ void run_tests(settings* s) {
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
 	fprintf(stdout, "Test if object was added:\t\t\t");
-	if (caldav_get_object(resp, make_time_t("2008/04/15"),
-		make_time_t("2008/04/16"), url, info) == OK) {
+	if (caldav_get_object(resp, make_time_t("2010/07/12"),
+		make_time_t("2010/07/13"), url, info) == OK) {
 		if (compare_object("UID", object, resp->msg))
 			fprintf(stdout, "OK\n");
 		else
@@ -417,9 +417,9 @@ void run_tests(settings* s) {
 	resp->msg = NULL;
 	g_free(object);
 	fprintf(stdout, "Test FREEBUSY search the same day:\t\t");
-	if (caldav_get_freebusy(resp, make_time_t("2008/04/15"),
-		make_time_t("2008/04/16"), url, info) == OK) {
-			if (compare_freebusy("20080415T151500Z/20080415T162500", resp->msg))
+	if (caldav_get_freebusy(resp, make_time_t("2010/07/12"),
+		make_time_t("2010/07/13"), url, info) == OK) {
+			if (compare_freebusy("20100712T151500Z/20100712T162500Z", resp->msg))
 				fprintf(stdout, "OK\n");
 			else
 				fprintf(stdout, "FAIL\n");
@@ -442,8 +442,8 @@ void run_tests(settings* s) {
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
 	fprintf(stdout, "Test if object was modified:\t\t\t");
-	if (caldav_get_object(resp, make_time_t("2008/04/16"),
-		make_time_t("2008/04/17"), url, info) == OK) {
+	if (caldav_get_object(resp, make_time_t("2010/07/13"),
+		make_time_t("2010/07/14"), url, info) == OK) {
 		if (compare_object("DTEND", object, resp->msg))
 			fprintf(stdout, "OK\n");
 		else
@@ -484,8 +484,8 @@ void run_tests(settings* s) {
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
 	fprintf(stdout, "Test if object was deleted:\t\t\t");
-	if (caldav_get_object(resp, make_time_t("2008/04/16"),
-		make_time_t("2008/04/17"), url, info) == OK) {
+	if (caldav_get_object(resp, make_time_t("2010/07/13"),
+		make_time_t("2010/07/14"), url, info) == OK) {
 		if (compare_object("UID", object, resp->msg))
 			fprintf(stdout, "FAIL\n");
 		else
@@ -512,8 +512,8 @@ void run_tests(settings* s) {
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
 	fprintf(stdout, "Test if object was added:\t\t\t");
-	if (caldav_get_object(resp, make_time_t("2008/04/15"),
-		make_time_t("2008/04/16"), url, info) == OK) {
+	if (caldav_get_object(resp, make_time_t("2010/07/12"),
+		make_time_t("2010/07/13"), url, info) == OK) {
 		if (compare_object("UID", object, resp->msg))
 			fprintf(stdout, "OK\n");
 		else
@@ -553,8 +553,8 @@ void run_tests(settings* s) {
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
 	fprintf(stdout, "Test if object was modified:\t\t\t");
-	if (caldav_get_object(resp, make_time_t("2008/04/16"),
-		make_time_t("2008/04/17"), url, info) == OK) {
+	if (caldav_get_object(resp, make_time_t("2010/07/13"),
+		make_time_t("2010/07/14"), url, info) == OK) {
 		if (compare_object("DTEND", object, resp->msg))
 			fprintf(stdout, "OK\n");
 		else
@@ -579,8 +579,8 @@ void run_tests(settings* s) {
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
 	fprintf(stdout, "Test if object was deleted:\t\t\t");
-	if (caldav_get_object(resp, make_time_t("2008/04/16"),
-		make_time_t("2008/04/17"), url, info) == OK) {
+	if (caldav_get_object(resp, make_time_t("2010/07/13"),
+		make_time_t("2010/07/14"), url, info) == OK) {
 		if (compare_object("UID", object, resp->msg))
 			fprintf(stdout, "FAIL\n");
 		else

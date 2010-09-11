@@ -21,7 +21,8 @@
 #  include "config.h"
 #endif
 
-#include "get-caldav-report.h"
+#include "get-display-name.h"
+#include "response-parser.h"
 #include <glib.h>
 #include <curl/curl.h>
 #include <stdio.h>
@@ -110,7 +111,7 @@ gboolean caldav_getname(caldav_settings* settings, caldav_error* error) {
 	else {
 		long code;
 		res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
-		if (code != 207) {
+		if (! parse_response(CALDAV_PROPFIND, code, chunk.memory)) {
 			error->code = code;
 			error->str = g_strdup(headers.memory);
 			result = TRUE;

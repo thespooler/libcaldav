@@ -22,6 +22,7 @@
 
 #include "delete-caldav-object.h"
 #include "lock-caldav-object.h"
+#include "response-parser.h"
 #include <glib.h>
 #include <curl/curl.h>
 #include <stdio.h>
@@ -147,7 +148,7 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 	else {
 		long code;
 		res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
-		if (code != 207) {
+		if (! parse_response(CALDAV_REPORT, code, chunk.memory)) {
 			error->code = code;
 			error->str = g_strdup(chunk.memory);
 			result = TRUE;
@@ -257,7 +258,7 @@ gboolean caldav_delete(caldav_settings* settings, caldav_error* error) {
 					long code;
 					res = curl_easy_getinfo(
 								curl, CURLINFO_RESPONSE_CODE, &code);
-					if (code != 204) {
+					if (! parse_response(CALDAV_DELETE, code, chunk.memory)) {
 						error->code = code;
 						error->str = g_strdup(chunk.memory);
 						result = TRUE;
