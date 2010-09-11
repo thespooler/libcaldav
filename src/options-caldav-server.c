@@ -22,6 +22,7 @@
 #endif
 
 #include "options-caldav-server.h"
+#include "response-parser.h"
 #include <glib.h>
 #include <curl/curl.h>
 #include <stdio.h>
@@ -78,8 +79,12 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 	res = curl_easy_perform(curl);
 	if (res == 0) {
 		gchar* head;
+		long code;
+
+		res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 		head = get_response_header("DAV", headers.memory, TRUE);
-		if (head && strstr(head, "calendar-access") != NULL) {
+		if (head && strstr(head, "calendar-access") != NULL &&
+				parse_response(CALDAV_OPTIONS, code, chunk.memory)) {
 			enabled = TRUE;
 			if (! test) {
 				result->msg = g_strdup(
@@ -87,8 +92,6 @@ gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* resu
 			}
 		}
 		else {
-			long code;
-			res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 			if (code == 200) {
 				error->code = -1;
 				error->str = g_strdup("URL is not a CalDAV resource");

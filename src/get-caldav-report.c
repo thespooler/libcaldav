@@ -22,6 +22,7 @@
 #endif
 
 #include "get-caldav-report.h"
+#include "response-parser.h"
 #include <glib.h>
 #include <curl/curl.h>
 #include <stdio.h>
@@ -143,7 +144,7 @@ gboolean caldav_getall(caldav_settings* settings, caldav_error* error) {
 	else {
 		long code;
 		res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
-		if (code != 207) {
+		if (! parse_response(CALDAV_REPORT, code, chunk.memory)) {
 			error->code = code;
 			error->str = g_strdup(headers.memory);
 			result = TRUE;
@@ -237,10 +238,20 @@ gboolean caldav_getrange(caldav_settings* settings, caldav_error* error) {
 		result = TRUE;
 	}
 	else {
-		gchar* report;
-		report = parse_caldav_report(chunk.memory, "calendar-data", "VEVENT");
-		settings->file = g_strdup(report);
-		g_free(report);
+		long code;
+		res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
+		if (! parse_response(CALDAV_REPORT, code, chunk.memory)) {
+			error->code = code;
+			error->str = g_strdup(headers.memory);
+			result = TRUE;
+		}
+		else {
+			gchar* report;
+			report = parse_caldav_report(
+						chunk.memory, "calendar-data", "VEVENT");
+			settings->file = g_strdup(report);
+			g_free(report);
+		}
 	}
 	g_free(request);
 	if (chunk.memory)

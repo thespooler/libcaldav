@@ -9,9 +9,8 @@ endif
 
 if DYNAMIC_LINK
 lib_LTLIBRARIES = libcaldav.la
-endif
-
 libcaldav_la_LDFLAGS = -version-info @LIBVERSION@
+endif
 
 libcaldav_la_SOURCES = \
 			caldav.h \
@@ -35,7 +34,9 @@ libcaldav_la_SOURCES = \
 			lock-caldav-object.c \
 			lock-caldav-object.h \
 			get-freebusy-report.c \
-			get-freebusy-report.h
+			get-freebusy-report.h \
+			response-parser.c \
+			response-parser.h
 
 libcaldav_includedir=$(includedir)/libcaldav-@VERSION@
 libcaldav_include_HEADERS = caldav.h
@@ -45,7 +46,12 @@ noinst_HEADERS = \
 			delete-caldav-object.h \
 			modify-caldav-object.h \
 			get-caldav-report.h \
-			caldav-utils.h
+			caldav-utils.h \
+			md5.h \
+			options-caldav-server.h \
+			lock-caldav-object.h \
+			get-freebusy-report.h \
+			response-parser.h
 
 libcaldav_la_LIBADD = \
 			@CURL_LIBS@ \

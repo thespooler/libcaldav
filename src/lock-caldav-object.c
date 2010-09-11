@@ -22,6 +22,7 @@
 
 #include "lock-caldav-object.h"
 #include "options-caldav-server.h"
+#include "response-parser.h"
 #include <glib.h>
 #include <curl/curl.h>
 #include <stdio.h>
@@ -119,7 +120,7 @@ gchar* caldav_lock_object(
 	else {
 		long code;
 		res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
-		if (code != 200) {
+		if (! parse_response(CALDAV_LOCK, code, chunk.memory)) {
 			gchar* status = get_tag("status", chunk.memory);
 			if (status && strstr(status, "423") != NULL) {
 				error->code = 423;
@@ -223,7 +224,7 @@ gboolean caldav_unlock_object(gchar* lock_token, gchar* URI,
 	else {
 		long code;
 		res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
-		if (code != 204) {
+		if (! parse_response(CALDAV_UNLOCK, code, chunk.memory)) {
 			error->code = code;
 			error->str = g_strdup(chunk.memory);
 		}

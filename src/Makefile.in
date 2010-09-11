@@ -79,7 +79,7 @@ am_libcaldav_la_OBJECTS = caldav.lo add-caldav-object.lo \
 	delete-caldav-object.lo modify-caldav-object.lo \
 	get-caldav-report.lo get-display-name.lo caldav-utils.lo \
 	md5.lo options-caldav-server.lo lock-caldav-object.lo \
-	get-freebusy-report.lo
+	get-freebusy-report.lo response-parser.lo
 libcaldav_la_OBJECTS = $(am_libcaldav_la_OBJECTS)
 libcaldav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -259,7 +259,7 @@ INCLUDES = @CURL_CFLAGS@ @GLIB_CFLAGS@ \
 
 @STATIC_LINK_TRUE@noinst_LTLIBRARIES = libcaldav.la
 @DYNAMIC_LINK_TRUE@lib_LTLIBRARIES = libcaldav.la
-libcaldav_la_LDFLAGS = -version-info @LIBVERSION@
+@DYNAMIC_LINK_TRUE@libcaldav_la_LDFLAGS = -version-info @LIBVERSION@
 libcaldav_la_SOURCES = \
 			caldav.h \
 			caldav.c \
@@ -282,7 +282,9 @@ libcaldav_la_SOURCES = \
 			lock-caldav-object.c \
 			lock-caldav-object.h \
 			get-freebusy-report.c \
-			get-freebusy-report.h
+			get-freebusy-report.h \
+			response-parser.c \
+			response-parser.h
 
 libcaldav_includedir = $(includedir)/libcaldav-@VERSION@
 libcaldav_include_HEADERS = caldav.h
@@ -291,7 +293,12 @@ noinst_HEADERS = \
 			delete-caldav-object.h \
 			modify-caldav-object.h \
 			get-caldav-report.h \
-			caldav-utils.h
+			caldav-utils.h \
+			md5.h \
+			options-caldav-server.h \
+			lock-caldav-object.h \
+			get-freebusy-report.h \
+			response-parser.h
 
 libcaldav_la_LIBADD = \
 			@CURL_LIBS@ \
@@ -391,6 +398,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/modify-caldav-object.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options-caldav-server.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/response-parser.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
