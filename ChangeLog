@@ -1,6 +1,11 @@
 libcaldav (0.6.2)
   * Fix bug to be able to handle HTTP HEADER lines split
     over multiple lines. Patch provided by Timothy Pearson
+  * Automatically select most secure way supported by server
+    when doing authentication.
+  * Fix case sensitive search for displayname and etag tag.
+  * Fixing multi threaded issues in gcrypt. See
+    http://www.gnu.org/software/gnutls/manual/html_node/Multi_002dthreaded-applications.html
   * Added more robust checking for response codes.
   * Fixed a bug which caused an improper default runtime init setting.
   * Added support for FreeBusy requests.
