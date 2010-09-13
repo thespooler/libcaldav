@@ -196,13 +196,26 @@ gchar* get_host(gchar* url);
 gchar* get_etag(gchar* text);
 
 /**
+ * Fetch the displayname element from XML
+ * @param text String
+ * @return displayname
+ */
+gchar* get_displayname(gchar* text);
+
+/**
  * Fetch any element from XML
  * @param text String
  * @return element
+ * @deprecated Defaults to search for CalDAV elements
  */
 gchar* get_tag(const gchar* tag, gchar* text);
 
-
+/**
+ * Fetch any element from XML. Namespace aware.
+ * @param text String
+ * @return element
+ */
+gchar* get_tag_ns(const gchar* namespace, const gchar* tag, gchar* text);
 
 /**
  * rebuild a raw URL with https if needed from the settings

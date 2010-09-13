@@ -121,7 +121,7 @@ gchar* caldav_lock_object(
 		long code;
 		res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 		if (! parse_response(CALDAV_LOCK, code, chunk.memory)) {
-			gchar* status = get_tag("status", chunk.memory);
+			gchar* status = get_tag_ns("DAV:", "status", chunk.memory);
 			if (status && strstr(status, "423") != NULL) {
 				error->code = 423;
 				error->str = g_strdup(status);
