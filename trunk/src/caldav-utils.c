@@ -32,6 +32,13 @@
 #include <curl/curl.h>
 #include <ctype.h>
 
+typedef struct {
+	char* NS;
+	char* prefix;
+} Namespace;
+static gchar DAV[] = "DAV:";
+static gchar CALDAV[] = "urn:ietf:params:xml:ns:caldav";
+
 /**
  * This function is burrowed from the libcurl documentation
  * @param text
@@ -383,6 +390,78 @@ gchar* get_response_header(
 		return NULL;
 }
 
+/**
+ * Find used namespace prefix in response
+ * @param text String
+ * @return gchar** list of struct Namespace
+ */
+static Namespace** getNamespace(gchar* text) {
+	Namespace** list = NULL;
+	Namespace* ns;
+	gchar* prefix;
+	gchar **nstoken, **head;
+	int pos = 0;
+	/* 
+	 * haveNS == 1 => DAV
+	 * haveNS == 2 => CALDAV
+	 * haveNS == 3 => DAV, CALDAV
+	 */
+	int haveNS = 0;
+	
+	if (! text)
+		return NULL;
+	nstoken = g_strsplit(text, "xmlns", 0);
+	if (! nstoken)
+		return NULL;
+	head = nstoken;
+	while (*nstoken && haveNS < 3) {
+		gchar* token = *nstoken;
+		while (*token) {
+			if (*token++ == ':')
+				break;
+		}
+		if (token && strlen(token) > 0) {
+			if ((prefix = g_strstr_len(token, -1, DAV)) != NULL && haveNS != 1) {
+				ns = g_new0(Namespace, 1);
+				ns->NS = g_strdup(DAV);
+				ns->prefix = g_strndup(token, prefix - token - 2);
+				list = g_realloc(list, sizeof(Namespace));
+				list[pos++] = ns;
+				haveNS += 1;
+			}
+			else if ((prefix = g_strstr_len(token, -1, CALDAV)) != NULL && haveNS != 2) {
+				/*pos = (list) ? 1 : 0;*/
+				ns = g_new0(Namespace, 1);
+				ns->NS = g_strdup(CALDAV);
+				ns->prefix = g_strndup(token, prefix - token - 2);
+				list = g_realloc(list, sizeof(Namespace) * (pos + 1));
+				list[pos++] = ns;
+				haveNS += 2;
+			}
+		}
+		nstoken += 1;
+	}
+	g_strfreev(head);
+	if (list)
+		list[pos] = NULL;
+
+	return list;
+}
+
+static void freeNamespace(Namespace** ns) {
+	Namespace** tmp = ns;
+	
+	if (! tmp)
+		return;
+	while (*tmp) {
+		g_free((*tmp)->NS);
+		g_free((*tmp)->prefix);
+		g_free(*tmp);
+		tmp += 1;
+	}
+	ns = tmp = NULL;
+}
+
 static const char* VCAL_HEAD =
 "BEGIN:VCALENDAR\r\n"
 "PRODID:-//CalDAV Calendar//NONSGML libcaldav//EN\r\n"
@@ -410,12 +489,27 @@ static gchar* parse_caldav_report_wrap(
 	gchar* begin_type;
 	gchar* end_type;
 	gboolean keep_going = TRUE;
+	Namespace** ns;
+	gchar* elem = NULL;
+	int p;
 
+	ns = getNamespace(report);
+	if (ns) {
+		for (p = 0; ns[p]; p++) {
+			if (strcmp(ns[p]->NS, CALDAV) == 0) {
+				elem = g_strconcat(ns[p]->prefix, ":", element, NULL);
+				break;
+			}
+		}
+		freeNamespace(ns);
+	}
+	if (! elem)
+		elem = g_strdup(element);
 	begin_type = g_strdup_printf("BEGIN:%s", type);
 	end_type = g_strdup_printf("END:%s", type);
 	pos = start = object = response = NULL;
 	tmp_report = g_strdup(report);
-	while ((pos = strstr(tmp_report, element)) != NULL && keep_going) {
+	while ((pos = strstr(tmp_report, elem)) != NULL && keep_going) {
 		pos = strchr(pos, '>');
 		if (!pos) {
 			break;
@@ -462,6 +556,7 @@ static gchar* parse_caldav_report_wrap(
 	g_free(tmp_report);
 	g_free(begin_type);
 	g_free(end_type);
+	g_free(elem);
 	if (wrap)
 		if (response) {
 			object = g_strdup(response);
@@ -585,31 +680,45 @@ gchar* verify_uid(gchar* object) {
  * @param text String
  * @return URL
  */
-#define ELEM_HREF "href>"
+ /* TODO use new namespace aware search */
+#define ELEM_HREF "href"
 gchar* get_url(gchar* text) {
-	gchar* pos;
+	/*gchar* pos;
 	gchar* url = NULL;
 
 	if ((pos = strstr(text, ELEM_HREF)) == NULL)
 		return url;
 	pos = &(*(pos + strlen(ELEM_HREF)));
 	url = g_strndup(pos, strlen(pos) - strlen(strchr(pos, '<')));
-	return url;
+	return url;*/
+	return get_tag_ns(DAV, ELEM_HREF, text);
 }
 
 /**
- * Fetch any element from XML
+ * Fetch any element from XML. Namespace aware.
  * @param text String
- * @param tag The element to look for
  * @return element
  */
-gchar* get_tag(const gchar* tag, gchar* text) {
+gchar* get_tag_ns(const gchar* namespace, const gchar* tag, gchar* text) {
 	gchar *pos;
 	gchar* res = NULL;
 	gchar* the_tag = NULL;
-
+	Namespace** ns;
+	int p;
+	
 	/*printf("%s\n", text);*/
-	the_tag = g_strdup_printf("<%s>", tag);
+	ns = getNamespace(text);
+	if (ns) {
+		for (p = 0; ns[p]; p++) {
+			if (strcmp(ns[p]->NS, namespace) == 0) {
+				the_tag = g_strconcat("<", ns[p]->prefix, ":", tag, ">", NULL);
+				break;
+			}
+		}
+		freeNamespace(ns);
+	}
+	if (! the_tag)
+		the_tag = g_strdup_printf("<%s>", tag);
 	if ((pos = strstr(text, the_tag)) == NULL) {
 		g_free(the_tag);
 		return res;
@@ -619,6 +728,26 @@ gchar* get_tag(const gchar* tag, gchar* text) {
 	g_free(the_tag);
 	return res;	
 }
+ 
+/**
+ * Fetch any element from XML
+ * @param text String
+ * @return element
+ * @deprecated Defaults to search for CalDAV elements
+ */
+gchar* get_tag(const gchar* tag, gchar* text) {
+	return get_tag_ns(CALDAV, tag, text);
+}
+
+/**
+ * Fetch the displayname element from XML
+ * @param text String
+ * @return displayname
+ */
+#define ELEM_ETAG "displayname"
+gchar* get_displayname(gchar* text) {
+	return get_tag_ns(DAV, ELEM_ETAG, text);
+}
 
 /**
  * Fetch the etag element from XML
@@ -627,17 +756,7 @@ gchar* get_tag(const gchar* tag, gchar* text) {
  */
 #define ELEM_ETAG "getetag"
 gchar* get_etag(gchar* text) {
-	gchar* etag = NULL;
-	
-	etag = get_tag(ELEM_ETAG, text);
-	/* Maybe namespace prefixed */
-	if (!etag) {
-		etag = get_tag("D:getetag", text);
-		if (!etag) {
-			etag = get_tag("d:getetag", text);
-		}
-	}
-	return etag;
+	return get_tag_ns(DAV, ELEM_ETAG, text);
 }
 
 /**
