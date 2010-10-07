@@ -121,6 +121,27 @@ gboolean caldav_add(caldav_settings* settings, caldav_error* error) {
 			result = TRUE;
 		}
 	}
+	if (! settings->id)
+		settings->id = caldav_get_caldav_id();
+	gchar* etag = get_response_header("ETAG", headers.memory, FALSE);
+	if (etag) {
+		settings->id->Type = CALDAV_ETAG_TYPE;
+		gchar* tmp = sanitize(etag);
+		g_free(etag);
+		settings->id->Ident.Etag.etag = g_strdup(tmp);
+		g_free(tmp);
+		settings->id->Ident.Etag.uri = g_strdup(url);
+	}
+	else {
+		gchar* location = get_response_header("Location", headers.memory, FALSE);
+		if (location) {
+			settings->id->Type = CALDAV_LOCATION_TYPE;
+			settings->id->Ident.Location.location = g_strdup(location);
+			g_free(location);
+		}
+	}
+	g_free(settings->url);
+	settings->url = NULL;
 	if (chunk.memory)
 		free(chunk.memory);
 	if (headers.memory)

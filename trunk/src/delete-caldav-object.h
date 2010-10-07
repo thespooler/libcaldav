@@ -20,6 +20,9 @@
 #ifndef __DELETE_CALDAV_OBJECT_H__
 #define __DELETE_CALDAV_OBJECT_H__
 
+#include <glib.h>
+G_BEGIN_DECLS
+
 #include "caldav-utils.h"
 #include "caldav.h"
 
@@ -30,6 +33,8 @@
  * @return TRUE in case of error, FALSE otherwise.
  */
 gboolean caldav_delete(caldav_settings* settings, caldav_error* error);
+
+G_END_DECLS
 
 #endif
 

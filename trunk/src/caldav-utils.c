@@ -22,6 +22,8 @@
 #endif
 
 #include "caldav-utils.h"
+#include "response-parser.h"
+#include "caldav.h"
 #include "md5.h"
 #include <glib.h>
 #include <stdio.h>
@@ -213,6 +215,8 @@ void init_caldav_settings(caldav_settings* settings) {
 	settings->ACTION = UNKNOWN;
 	settings->start = 0;
 	settings->end = 0;
+	settings->etag = NULL;
+	settings->id = NULL;
 }
 
 /**
@@ -248,6 +252,12 @@ void free_caldav_settings(caldav_settings* settings) {
 	settings->ACTION = UNKNOWN;
 	settings->start = 0;
 	settings->end = 0;
+	if (settings->etag) {
+		g_free(settings->etag);
+		settings->etag = NULL;
+	}
+	if (settings->id)
+		caldav_free_caldav_id(&settings->id);
 }
 
 static gchar* place_after_hostname(const gchar* start, const gchar* stop) {
@@ -617,11 +627,56 @@ gchar* get_caldav_datetime(time_t* time) {
 	struct tm *current;
 	gchar* datetime;
 
+	tzset();
 	current = localtime(time);
 	datetime = g_strdup_printf("%d%.2d%.2dT%.2d%.2d%.2dZ",
-		current->tm_year + 1900, current->tm_mon + 1, current->tm_mday,
+		current->tm_year/* + 1900*/, current->tm_mon/* + 1*/, current->tm_mday,
 		current->tm_hour, current->tm_min, current->tm_sec);
 	return datetime;
+}
+
+/**
+ * Convert a CalDAV DateTime variable to time_t
+ * @param time a specific date and time
+ * @return time_t for the date and time
+ */
+time_t get_time_t(const gchar* date) {
+	struct tm current;
+	gchar* time;
+	gchar* pos;
+
+	if (! date)
+		return (time_t) -1;
+	
+	if (!(strlen(date) == 8 || strlen(date) == 15 || strlen(date) == 16))
+		return (time_t) -1;
+	
+	tzset();
+	if ((pos = strchr(date, 'T')) != NULL) {
+		pos += 1;
+		time = g_strndup(pos, 2);
+		current.tm_hour = atoi(time);
+		g_free(time);
+		time = g_strndup(pos+2, 2);
+		current.tm_min = atoi(time);
+		g_free(time);
+		time = g_strndup(pos+4, 2);
+		current.tm_sec = atoi(time);
+		g_free(time);
+		if (strlen(date) == 15) {
+			/* localtime must be converted to UTF */
+		}
+	}
+	time = g_strndup(date, 4);
+	current.tm_year = atoi(time);
+	g_free(time);
+	time = g_strndup(date+4, 2);
+	current.tm_mon = atoi(time);
+	g_free(time);
+	time = g_strndup(date+6, 2);
+	current.tm_mday = atoi(time);
+	g_free(time);
+	return mktime(&current);
 }
 
 /**
@@ -668,10 +723,7 @@ gchar* verify_uid(gchar* object) {
 	}
 	else
 		g_free(uid);
-	/*uid = g_strdup(newobj);
-	g_free(newobj);*/
 	g_strchomp(newobj);
-	/*g_free(uid);*/
 	return newobj;
 }
 
@@ -680,22 +732,15 @@ gchar* verify_uid(gchar* object) {
  * @param text String
  * @return URL
  */
- /* TODO use new namespace aware search */
 #define ELEM_HREF "href"
 gchar* get_url(gchar* text) {
-	/*gchar* pos;
-	gchar* url = NULL;
-
-	if ((pos = strstr(text, ELEM_HREF)) == NULL)
-		return url;
-	pos = &(*(pos + strlen(ELEM_HREF)));
-	url = g_strndup(pos, strlen(pos) - strlen(strchr(pos, '<')));
-	return url;*/
 	return get_tag_ns(DAV, ELEM_HREF, text);
 }
 
 /**
  * Fetch any element from XML. Namespace aware.
+ * @param namespace
+ * @param tag
  * @param text String
  * @return element
  */
@@ -703,32 +748,120 @@ gchar* get_tag_ns(const gchar* namespace, const gchar* tag, gchar* text) {
 	gchar *pos;
 	gchar* res = NULL;
 	gchar* the_tag = NULL;
+	gchar* end_tag = NULL;
 	Namespace** ns;
 	int p;
 	
 	/*printf("%s\n", text);*/
-	ns = getNamespace(text);
-	if (ns) {
-		for (p = 0; ns[p]; p++) {
-			if (strcmp(ns[p]->NS, namespace) == 0) {
-				the_tag = g_strconcat("<", ns[p]->prefix, ":", tag, ">", NULL);
-				break;
+	if (namespace) {
+		ns = getNamespace(text);
+		if (ns) {
+			for (p = 0; ns[p]; p++) {
+				if (strcmp(ns[p]->NS, namespace) == 0) {
+					the_tag = g_strconcat("<", ns[p]->prefix, ":", tag, ">", NULL);
+					end_tag = g_strconcat("</", ns[p]->prefix, ":", tag, ">", NULL);
+					break;
+				}
 			}
+			freeNamespace(ns);
 		}
-		freeNamespace(ns);
 	}
-	if (! the_tag)
+	if (! the_tag) {
 		the_tag = g_strdup_printf("<%s>", tag);
+		end_tag = g_strdup_printf("</%s>", tag);
+	}
 	if ((pos = strstr(text, the_tag)) == NULL) {
 		g_free(the_tag);
 		return res;
 	}
 	pos = &(*(pos + strlen(the_tag)));
-	res = g_strndup(pos, strlen(pos) - strlen(strchr(pos, '<')));
+	res = g_strndup(pos, strlen(pos) - strlen(strstr(pos, end_tag)));
 	g_free(the_tag);
+	g_free(end_tag);
 	return res;	
 }
- 
+
+gchar* sanitize(gchar* s) {
+	gchar* s1;
+	gchar *start, *end;
+	
+	if (! s)
+		return NULL;
+	
+	if ((start = strchr(s, '"')) != NULL) {
+		start += 1;
+		if ((end = strchr(start, '"')) != NULL) {
+			s1 = g_strndup(start, end - start);
+		}
+		else {
+			s1 = g_strdup(start);
+		}
+	}
+	else
+		s1 = g_strdup(s);
+	return s1; 
+}
+
+/**
+ * Fetch a list of elements from XML. Namespace aware.
+ * @param text String
+ * @return list of elements. List is NULL terminated.
+ */
+#define NAMESPACE "DAV:"
+#define THE_TAG "response"
+GSList* get_tag_list(gchar* text) {
+	gchar* elem;
+	gchar* raw_text;
+	gchar* token;
+	Pair* pair = NULL;
+	GSList* list = NULL;
+	gchar* the_tag = NULL;
+	gchar* etag = NULL;
+	gchar* href = NULL;
+	Namespace** ns;
+	int p;
+	
+	ns = getNamespace(text);
+	if (ns) {
+		for (p = 0; ns[p]; p++) {
+			if (strcmp(ns[p]->NS, NAMESPACE) == 0) {
+				the_tag = g_strconcat(ns[p]->prefix, ":", THE_TAG, NULL);
+				etag = g_strconcat(ns[p]->prefix, ":getetag", NULL);
+				href = g_strconcat(ns[p]->prefix, ":href", NULL);
+				break;
+			}
+		}
+		freeNamespace(ns);
+	}
+	if (! the_tag) {
+		the_tag = g_strdup(THE_TAG);
+		etag = g_strdup("getetag");
+		href = g_strdup("href");
+	}
+	token = g_strconcat("<", the_tag, ">", NULL);
+	raw_text = g_strdup(text);
+	elem = strstr(raw_text, token);
+	if (elem) {
+		do {
+			gchar* element = get_tag_ns(NULL, the_tag, elem);
+			pair = g_new0(Pair, 1);
+			pair->href = g_strdup(get_tag_ns(NULL, href, element));
+			gchar* tmp = sanitize(get_tag_ns(NULL, etag, element));
+			pair->etag = g_strdup(tmp);
+			g_free(tmp);
+			list = g_slist_prepend(list, pair);
+			elem  = elem + strlen(token);
+			g_free(element);
+		} while ((elem = strstr(elem, token)) != NULL);
+	}
+	g_free(token);
+	g_free(the_tag);
+	g_free(href);
+	g_free(etag);
+	g_free(raw_text);
+	return list;
+}
+
 /**
  * Fetch any element from XML
  * @param text String
@@ -744,9 +877,9 @@ gchar* get_tag(const gchar* tag, gchar* text) {
  * @param text String
  * @return displayname
  */
-#define ELEM_ETAG "displayname"
+#define ELEM_DISPLAYNAME "displayname"
 gchar* get_displayname(gchar* text) {
-	return get_tag_ns(DAV, ELEM_ETAG, text);
+	return get_tag_ns(DAV, ELEM_DISPLAYNAME, text);
 }
 
 /**
@@ -782,7 +915,6 @@ gchar* get_host(gchar* url) {
  * @param uri URI to use instead of base
  * @return URL
  */
-
 gchar* rebuild_url(caldav_settings* settings, gchar* uri){
     gchar* url = NULL;
     gchar* mystr = NULL;
@@ -841,4 +973,219 @@ CURL* get_curl(caldav_settings* setting) {
 		g_free(url);
 	}
 	return (curl) ? curl : NULL;
+}
+
+/**
+ * @param text text to search in
+ * @param type VCalendar element to find
+ * @return TRUE if text contains more than one resource FALSE otherwise
+ */
+gboolean single_resource(const gchar* text, const char* type) {
+	const gchar* elem = "calendar-data";
+	gchar* xml = g_strdup(text);
+	gchar* token = g_strconcat("BEGIN:", type, NULL);
+	int i = 0;
+	
+	gchar* objects = parse_caldav_report(xml, elem, type);
+	gchar** parts = g_strsplit(objects, token, 0);
+	g_free(objects);
+	g_free(token);
+	gchar** head = parts;
+	while (parts && *parts++) {
+		if (i++ > 1)
+			break;
+	}
+	g_strfreev(head);
+	g_free(xml);
+	
+	return (i < 3);
+}
+
+/**
+ * @param text iCal to search in
+ * @param elem VCalendar element to find
+ * @return value or NULL if not found
+ */
+gchar* get_element_value(const gchar* text, const char* elem) {
+	gchar* value = NULL;
+	
+	gchar* pos = strstr(text, elem);
+	if (pos) {
+		if ((pos = strchr(pos, ':')) != NULL) {
+			pos = pos + 1;
+			gchar* end = strchr(pos, '\n');
+			if (end) {
+				value = g_strndup(pos, end - pos);
+			} 
+		}
+	}
+	return value;
+}
+
+/**
+ * A static literal string containing the first part of the calendar query.
+ * The actual UID to use for the query is added at runtime.
+ */
+static char* search_head =
+"<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
+"<C:calendar-query xmlns:D=\"DAV:\""
+"                  xmlns:C=\"urn:ietf:params:xml:ns:caldav\">"
+"  <D:prop>"
+"    <D:getetag/>"
+"    <C:calendar-data/>"
+"  </D:prop>"
+"  <C:filter>"
+"    <C:comp-filter name=\"VCALENDAR\">"
+"      <C:comp-filter name=\"VEVENT\">"
+"        <C:prop-filter name=\"UID\">";
+
+/**
+ * A static literal string containing the last part of the calendar query
+ */
+static char* search_tail =
+"</C:prop-filter>"
+"      </C:comp-filter>"
+"    </C:comp-filter>"
+"  </C:filter>"
+"</C:calendar-query>";
+
+/**
+ * Search CalDAV store for a specific object's ETAG
+ * @param chunk struct MemoryStruct containing response from server
+ * @param settings caldav_settings
+ * @param error caldav_error
+ * @return ETAG from the object or NULL
+ */
+gchar* find_etag(struct MemoryStruct* chunk,
+  				 caldav_settings* settings,
+				 caldav_error* error) {
+	CURL* curl;
+	CURLcode res = 0;
+	char error_buf[CURL_ERROR_SIZE];
+	struct config_data data;
+	struct MemoryStruct headers;
+	struct curl_slist *http_header = NULL;
+	gchar* search;
+	gchar* uid;
+	gchar* etag = NULL;
+	
+	if (! chunk)
+		return NULL;
+	
+	headers.memory = NULL;
+	headers.size = 0;
+
+	curl = get_curl(settings);
+	if (!curl) {
+		error->code = -1;
+		error->str = g_strdup("Could not initialize libcurl");
+		g_free(settings->file);
+		settings->file = NULL;
+		return NULL;
+	}
+
+	http_header = curl_slist_append(http_header,
+			"Content-Type: application/xml; charset=\"utf-8\"");
+	http_header = curl_slist_append(http_header, "Depth: infinity");
+	http_header = curl_slist_append(http_header, "Expect:");
+	http_header = curl_slist_append(http_header, "Transfer-Encoding:");
+	data.trace_ascii = settings->trace_ascii;
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_header);
+	/* send all data to this function  */
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+	/* we pass our 'chunk' struct to the callback function */
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)chunk);
+	/* send all data to this function  */
+	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION,	WriteHeaderCallback);
+	/* we pass our 'headers' struct to the callback function */
+	curl_easy_setopt(curl, CURLOPT_WRITEHEADER, (void *)&headers);
+	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, (char *) &error_buf);
+	if (settings->debug) {
+		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
+		curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &data);
+		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+	}
+	gchar* file = g_strdup(settings->file);
+	if ((uid = get_response_header("uid", file, FALSE)) == NULL) {
+		g_free(file);
+		error->code = 1;
+		error->str = g_strdup("Error: Missing required UID for object");
+		return NULL;
+	}
+	g_free(file);
+	/*
+	 * ICalendar server does not support collation
+	 * <C:text-match collation=\"i;ascii-casemap\">%s</C:text-match>
+	 * <C:text-match>%s</C:text-match>
+	 */
+	search = g_strdup_printf(
+		"%s\r\n<C:text-match collation=\"i;ascii-casemap\">%s</C:text-match>\r\n%s",
+		search_head, uid, search_tail);
+	g_free(uid);
+	/* enable uploading */
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, search);
+	curl_easy_setopt (curl, CURLOPT_POSTFIELDSIZE, strlen(search));
+	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "REPORT");
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+	curl_easy_setopt(curl, CURLOPT_UNRESTRICTED_AUTH, 1);
+	curl_easy_setopt(curl, CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL);
+	res = curl_easy_perform(curl);
+	g_free(search);
+	curl_slist_free_all(http_header);
+	http_header = NULL;
+	if (res != 0) {
+		error->code = -1;
+		error->str = g_strdup_printf("%s", error_buf);
+		g_free(settings->file);
+		settings->file = NULL;
+	}
+	else {
+		long code;
+		res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
+		if (! parse_response(CALDAV_REPORT, code, chunk->memory)) {
+			error->code = code;
+			error->str = g_strdup(chunk->memory);
+		}
+		else {
+			/* test if result contains more than one resource */
+			if (single_resource(chunk->memory, "VEVENT")) {
+				gchar* url = NULL;
+				url = get_url(chunk->memory);
+				if (url) {
+					etag = get_etag(chunk->memory);
+				}
+				else {
+					error->code = code;
+					if (chunk->memory)
+						error->str = g_strdup(chunk->memory);
+					else
+						error->str = g_strdup("No object found");
+				}
+				g_free(url);
+			}
+			else {
+				error->code = -1;
+				error->str = g_strdup("Multiple objects found");
+			}
+		}
+	}
+	if (headers.memory)
+		free(headers.memory);
+	curl_easy_cleanup(curl);
+	return etag;
+}
+
+gchar* remove_protocol(gchar* text) {
+	gchar* protocol;
+	gchar* url;
+	
+	if (! text)
+		return NULL;
+
+	if ((protocol = strstr(text, "://")) != NULL)
+		url = g_strdup(protocol + 3);
+	else
+		url = g_strdup(text);
+	
+	return url;
 }

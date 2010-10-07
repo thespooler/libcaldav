@@ -21,6 +21,8 @@
 #define __CALDAV_UTILS_H__
 
 #include <glib.h>
+G_BEGIN_DECLS
+
 #include <stdlib.h>
 #include <curl/curl.h>
 #include "caldav.h"
@@ -50,6 +52,8 @@ struct _CALDAV_SETTINGS {
 	CALDAV_ACTION ACTION;
 	time_t start;
 	time_t end;
+	gchar* etag;
+	CALDAV_ID* id;
 };
 
 /**
@@ -73,6 +77,11 @@ struct MemoryStruct {
 struct config_data {
 	char trace_ascii;
 };
+
+typedef struct {
+	gchar* href;
+	gchar* etag;
+} Pair;
 
 /**
  * This function is burrowed from the libcurl documentation
@@ -212,10 +221,19 @@ gchar* get_tag(const gchar* tag, gchar* text);
 
 /**
  * Fetch any element from XML. Namespace aware.
+ * @param namespace
+ * @param tag
  * @param text String
  * @return element
  */
 gchar* get_tag_ns(const gchar* namespace, const gchar* tag, gchar* text);
+
+/**
+ * Fetch a list of elements from XML. Namespace aware.
+ * @param text String
+ * @return list of elements List is NULL terminated.
+ */
+GSList* get_tag_list(gchar* text);
 
 /**
  * rebuild a raw URL with https if needed from the settings
@@ -230,5 +248,43 @@ gchar* rebuild_url(caldav_settings* setting, gchar* uri);
  * @return CURL
  */
 CURL* get_curl(caldav_settings* setting);
+
+/**
+ * Search CalDAV store for a specific object's ETAG
+ * @param chunk struct MemoryStruct containing response from server
+ * @param settings caldav_settings
+ * @param error caldav_error
+ * @return ETAG from the object or NULL
+ */
+gchar* find_etag(struct MemoryStruct* chunk,
+  				 caldav_settings* settings,
+				 caldav_error* error);
+
+/**
+ * @param text text to search in
+ * @param type VCalendar element to find
+ * @return TRUE if text contains more than one resource FALSE otherwise
+ */
+gboolean single_resource(const gchar* text, const char* type);
+
+gchar* remove_protocol(gchar* text);
+
+/**
+ * @param text iCal to search in
+ * @param elem VCalendar element to find
+ * @return value or NULL if not found
+ */
+gchar* get_element_value(const gchar* text, const char* elem);
+
+/**
+ * Convert a CalDAV DateTime variable to time_t
+ * @param time a specific date and time
+ * @return time_t for the date and time
+ */
+time_t get_time_t(const gchar* date);
+
+gchar* sanitize(gchar* s);
+
+G_END_DECLS
 
 #endif

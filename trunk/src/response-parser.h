@@ -20,6 +20,9 @@
 #ifndef __RESPONSE_PARSER_H__
 #define __RESPONSE_PARSER_H__
 
+#include <glib.h>
+G_BEGIN_DECLS
+
 #include "caldav-utils.h"
 #include "caldav.h"
 
@@ -41,5 +44,7 @@ typedef enum {
 
 gboolean
 parse_response(CALDAV_METHOD method, int response_code, gchar* response_body);
+
+G_END_DECLS
 
 #endif

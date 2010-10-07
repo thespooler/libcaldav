@@ -267,8 +267,8 @@ time_t make_time_t(const char* time_elem) {
 	t = time(NULL);
 	tmp = localtime(&t);
 	elem = g_strsplit(time_elem, "/", 3);
-	datetime.tm_year = atoi(elem[0]) - 1900;
-	datetime.tm_mon = atoi(elem[1]) - 1;
+	datetime.tm_year = atoi(elem[0])/* - 1900*/;
+	datetime.tm_mon = atoi(elem[1])/* - 1*/;
 	datetime.tm_mday = atoi(elem[2]);
 	g_strfreev(elem);
 	t = mktime(&datetime);
@@ -346,6 +346,8 @@ void run_tests(settings* s) {
 	gchar** parts;
 	gchar* url;
 	gchar* object;
+	CALDAV_RESPONSE res;
+	CALDAV_ID* id = NULL;
 	
 	if (DEBUG_LIB) {
 	    info->options->debug = 1;
@@ -392,11 +394,12 @@ void run_tests(settings* s) {
 	}
 	g_file_get_contents("../ics/add.ics", &object, NULL, NULL);
 	fprintf(stdout, "Test caldav_add_object:\t\t\t\t");
-	if (caldav_add_object(object, url, info) == OK) {
+	if (caldav_id_add_object(&id, object, url, info) == OK) {
 		fprintf(stdout, "OK\n");
 		if (DEBUG) fprintf(stdout, "Added successfully\n");
 	}
 	else {
+		caldav_free_caldav_id(&id);
 		fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
@@ -433,11 +436,18 @@ void run_tests(settings* s) {
 	resp->msg = NULL;
 	g_file_get_contents("../ics/modify.ics", &object, NULL, NULL);
 	fprintf(stdout, "Test caldav_modify_object:\t\t\t");
-	if (caldav_modify_object(object, url, info) == OK) {
+	if (id) {
+		res = caldav_id_modify_object(&id, object, url, info);
+	}
+	else {
+		res = caldav_modify_object(object, url, info);
+	}
+	if (res == OK) {
 		fprintf(stdout, "OK\n");
 		if (DEBUG) fprintf(stdout, "Modified successfully\n");
 	}
 	else {
+		caldav_free_caldav_id(&id);
 		fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
@@ -475,13 +485,23 @@ void run_tests(settings* s) {
 	g_free(object);
 	g_file_get_contents("../ics/delete.ics", &object, NULL, NULL);
 	fprintf(stdout, "Test caldav_delete_object:\t\t\t");
-	if (caldav_delete_object(object, url, info) == OK) {
+	if (id) {
+		res =  caldav_id_delete_object(id, object, url, info);
+	}
+	else {
+		res = caldav_delete_object(object, url, info);
+	}
+	if (res == OK) {
 		fprintf(stdout, "OK\n");
 		if (DEBUG) fprintf(stdout, "Deleted successfully\n");
 	}
 	else {
 		fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
+	}
+	if (id) {
+		caldav_free_caldav_id(&id);
+		id = NULL;
 	}
 	fprintf(stdout, "Test if object was deleted:\t\t\t");
 	if (caldav_get_object(resp, make_time_t("2010/07/13"),
@@ -503,11 +523,12 @@ void run_tests(settings* s) {
 	info->options->use_locking = 0;
 	g_file_get_contents("../ics/add.ics", &object, NULL, NULL);
 	fprintf(stdout, "Test caldav_add_object:\t\t\t\t");
-	if (caldav_add_object(object, url, info) == OK) {
+	if (caldav_id_add_object(&id, object, url, info) == OK) {
 		fprintf(stdout, "OK\n");
 		if (DEBUG) fprintf(stdout, "Added successfully\n");
 	}
 	else {
+		caldav_free_caldav_id(&id);
 		fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
@@ -527,28 +548,20 @@ void run_tests(settings* s) {
 	g_free(resp->msg);
 	resp->msg = NULL;
 	g_free(object);
-/*	fprintf(stdout, "Test FREEBUSY search the same day:\t\t");
-	if (caldav_get_freebusy(resp, make_time_t("2008/04/15"),
-		make_time_t("2008/04/16"), url, info) == OK) {
-			if (compare_freebusy("20080415T151500Z/20080415T162500", resp->msg))
-				fprintf(stdout, "OK\n");
-			else
-				fprintf(stdout, "FAIL\n");
-		if (DEBUG) fprintf(stdout, "%s\n", resp->msg);
-	}
-	else {
-		fprintf(stdout, "FAIL\n");
-		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
-	}
-	g_free(resp->msg);
-	resp->msg = NULL;*/
 	g_file_get_contents("../ics/modify.ics", &object, NULL, NULL);
 	fprintf(stdout, "Test caldav_modify_object:\t\t\t");
-	if (caldav_modify_object(object, url, info) == OK) {
+	if (id) {
+		res = caldav_id_modify_object(&id, object, url, info);
+	}
+	else {
+		res = caldav_modify_object(object, url, info);
+	}
+	if (res == OK) {
 		fprintf(stdout, "OK\n");
 		if (DEBUG) fprintf(stdout, "Modified successfully\n");
 	}
 	else {
+		caldav_free_caldav_id(&id);
 		fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
 	}
@@ -570,13 +583,23 @@ void run_tests(settings* s) {
 	g_free(object);
 	g_file_get_contents("../ics/delete.ics", &object, NULL, NULL);
 	fprintf(stdout, "Test caldav_delete_object:\t\t\t");
-	if (caldav_delete_object(object, url, info) == OK) {
+	if (id) {
+		res =  caldav_id_delete_object(id, object, url, info);
+	}
+	else {
+		res = caldav_delete_object(object, url, info);
+	}
+	if (res == OK) {
 		fprintf(stdout, "OK\n");
 		if (DEBUG) fprintf(stdout, "Deleted successfully\n");
 	}
 	else {
 		fprintf(stdout, "FAIL\n");
 		if (DEBUG) fprintf(stdout, "%ld: %s\n", info->error->code, info->error->str);
+	}
+	if (id) {
+		caldav_free_caldav_id(&id);
+		id = NULL;
 	}
 	fprintf(stdout, "Test if object was deleted:\t\t\t");
 	if (caldav_get_object(resp, make_time_t("2010/07/13"),

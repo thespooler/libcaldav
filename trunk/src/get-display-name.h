@@ -20,6 +20,9 @@
 #ifndef __GET_DISPLAY_NAME_H__
 #define __GET_DISPLAY_NAME_H__
 
+#include <glib.h>
+G_BEGIN_DECLS
+
 #include "caldav-utils.h"
 
 /**
@@ -29,6 +32,8 @@
  * @return TRUE in case of error, FALSE otherwise.
  */
 gboolean caldav_getname(caldav_settings* settings, caldav_error* error);
+
+G_END_DECLS
 
 #endif
 
