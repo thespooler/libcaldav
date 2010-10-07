@@ -20,9 +20,11 @@
 #ifndef __GET_CALDAV_REPORT_H__
 #define __GET_CALDAV_REPORT_H__
 
+#include <glib.h>
+G_BEGIN_DECLS
+
 #include "caldav-utils.h"
 #include "caldav.h"
-#include <glib.h>
 
 /**
  * Function for getting all events from collection.
@@ -39,5 +41,15 @@ gboolean caldav_getall(caldav_settings* settings, caldav_error* error);
  * @return TRUE in case of error, FALSE otherwise.
  */
 gboolean caldav_getrange(caldav_settings* settings, caldav_error* error);
+
+/**
+ * Function for getting an ETAG from event within a time range from collection.
+ * @param settings A pointer to caldav_settings. @see caldav_settings
+ * @param error A pointer to caldav_error. @see caldav_error
+ * @return TRUE in case of error, FALSE otherwise.
+ */
+gboolean caldav_request_etag(caldav_settings* settings, caldav_error* error);
+
+G_END_DECLS
 
 #endif

@@ -20,6 +20,9 @@
 #ifndef __OPTIONS_CALDAV_SERVER_H__
 #define __OPTIONS_CALDAV_SERVER_H__
 
+#include <glib.h>
+G_BEGIN_DECLS
+
 #include "caldav-utils.h"
 #include "caldav.h"
 
@@ -39,5 +42,7 @@
  */
 gboolean caldav_getoptions(CURL* curl, caldav_settings* settings, response* result,
 				caldav_error* error, gboolean test);
+
+G_END_DECLS
 
 #endif

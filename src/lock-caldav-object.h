@@ -20,6 +20,9 @@
 #ifndef __LOCK_CALDAV_OBJECT_H__
 #define __LOCK_CALDAV_OBJECT_H__
 
+#include <glib.h>
+G_BEGIN_DECLS
+
 #include "caldav-utils.h"
 #include "caldav.h"
 
@@ -51,5 +54,7 @@ gboolean caldav_unlock_object(gchar* lock_token, gchar* URI,
  * @return True if locking is supported by the server. False otherwise
  */
 gboolean caldav_lock_support(caldav_settings* settings, caldav_error* error);
+
+G_END_DECLS
 
 #endif

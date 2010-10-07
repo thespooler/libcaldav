@@ -23,6 +23,7 @@
 #define _MD5_HDR_
 
 #include <glib.h>
+G_BEGIN_DECLS
 
 /**
  * @typedef u32
@@ -47,6 +48,8 @@ void caldav_md5_hex_digest(char *hexdigest, const unsigned char *s);
 void caldav_md5_hex_hmac(char *hexdigest,
                   const unsigned char* text, int text_len,
                   const unsigned char* key, int key_len);
+
+G_END_DECLS
 
 #endif /* _MD5_HDR_ */
 

@@ -20,9 +20,11 @@
 #ifndef __GET_FREEBUSY_REPORT_H__
 #define __GET_FREEBUSY_REPORT_H__
 
+#include <glib.h>
+G_BEGIN_DECLS
+
 #include "caldav-utils.h"
 #include "caldav.h"
-#include <glib.h>
 
 /**
  * Function for getting freebusy within a time range from collection.
@@ -31,5 +33,7 @@
  * @return TRUE in case of error, FALSE otherwise.
  */
 gboolean caldav_freebusy(caldav_settings* settings, caldav_error* error);
+
+G_END_DECLS
 
 #endif

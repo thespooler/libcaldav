@@ -79,8 +79,8 @@ time_t make_time_t(const char* time_elem) {
 	//tmp = localtime(&t);
 	elem = g_strsplit(time_elem, "/", 3);
 	if (g_strv_length(elem) == 3) {
-	    datetime.tm_year = atoi(elem[0]) - 1900;
-	    datetime.tm_mon = atoi(elem[1]) - 1;
+	    datetime.tm_year = atoi(elem[0])/* - 1900*/;
+	    datetime.tm_mon = atoi(elem[1])/* - 1*/;
 	    datetime.tm_mday = atoi(elem[2]);
 	    t = mktime(&datetime);
 	}
@@ -111,8 +111,8 @@ time_t make_fbtime_t(const char* time_elem) {
 		g_strfreev(elem);
 	}
 	elem = g_strsplit(time_elem, "/", 3);
-	datetime.tm_year = atoi(elem[0]) - 1900;
-	datetime.tm_mon = atoi(elem[1]) - 1;
+	datetime.tm_year = atoi(elem[0])/* - 1900*/;
+	datetime.tm_mon = atoi(elem[1])/* - 1*/;
 	datetime.tm_mday = atoi(elem[2]);
 	g_strfreev(elem);
 	if (utc) {
@@ -138,9 +138,11 @@ static const char* usage[] = 	{
 "\t\t-c\tprovide custom cacert (path to cert)\n"
 "\t\t-d\tdebug (show request/response)\n"
 "\t\t-e\tend [yyyy/mm/dd]. For FREEBUSY [yyyy/mm/dd[ hh/mm[/ss[/z]]]\n"
-"\t\t-f\tfile. Alternative is to use IO redirection (<)\n"
+"\t\t-f\tfile Alternative is to use IO redirection (<)\n"
+"\t\t-l\tURI URI or Location\n"
 "\t\t-p\tpassword\n"
 "\t\t-s\tstart [yyyy/mm/dd]. For FREEBUSY [yyyy/mm/dd[ hh/mm[/ss[/z]]]\n"
+"\t\t-t\tetag ETAG to use\n" 
 "\t\t-u\tusername\n"
 "\t\t-v\tdisable certificate verification\n"
 "\t\t-h|-?\tusage\n"
@@ -157,15 +159,18 @@ int main(int argc, char **argv) {
 	gchar* url = NULL;
 	gchar* start = NULL;
 	gchar* end = NULL;
+	gchar* uri = NULL;
+	gchar* etag = NULL;
 	response* result;
 	CALDAV_RESPONSE res = UNKNOWN;
 	gchar* input = NULL;
 	char** options = NULL;
 	runtime_info* opt;
 	gchar* custom_cacert = NULL;
+	CALDAV_ID* id = NULL;
 
 	opt = caldav_get_runtime_info();
-	while ((c = getopt(argc, argv, "a:c:de:f:hp:s:u:v?")) != -1) {
+	while ((c = getopt(argc, argv, "a:c:de:f:hl:p:s:t:u:v?")) != -1) {
 		switch (c) {
 			case 'h':
 			case '?':
@@ -173,13 +178,13 @@ int main(int argc, char **argv) {
 				return 0;
 			case 'a':
 				if (strcmp("add", optarg) == 0) {
-					ACTION = ADD;
+					ACTION = ID_ADD;
 				}
 				else if (strcmp("delete", optarg) == 0) {
-					ACTION = DELETE;
+					ACTION = ID_DELETE;
 				}
 				else if (strcmp("modify", optarg) == 0) {
-					ACTION = MODIFY;
+					ACTION = ID_MODIFY;
 				}
 				else if (strcmp("get", optarg) == 0) {
 					ACTION = GET;
@@ -221,11 +226,17 @@ int main(int argc, char **argv) {
 					caldav_free_runtime_info(&opt);
 					return 1;
 				}
+			case 'l':
+				uri = optarg;
+				break;
 			case 'p':
 				password = optarg;
 				break;
 			case 's':
 				start = optarg;
+				break;
+			case 't':
+				etag = optarg;
 				break;
 			case 'u':
 				username = optarg;
@@ -304,9 +315,83 @@ int main(int argc, char **argv) {
 			result, make_time_t(start), make_time_t(end), url, opt); break;
 		case FREEBUSY: res = caldav_get_freebusy(
 			result, make_fbtime_t(start), make_fbtime_t(end), url, opt); break;
-		case ADD: res = caldav_add_object(input, url, opt); break;
-		case DELETE: res = caldav_delete_object(input, url, opt); break;
-		case MODIFY: res = caldav_modify_object(input, url, opt); break;
+		case ID_ADD:
+			id = caldav_get_caldav_id();
+			if (etag) {
+				if (! uri) {
+					fprintf(stderr, "Error: Missing URI\n");
+					caldav_free_response(&result);
+					caldav_free_runtime_info(&opt);
+					g_free(url);
+					caldav_free_caldav_id(&id);
+					return 1;
+				}
+				id->Type = CALDAV_ETAG_TYPE;
+				id->Ident.Etag.etag = g_strdup(etag);
+				id->Ident.Etag.uri = g_strdup(uri);
+			}
+			else if (uri) {
+				id->Type = CALDAV_LOCATION_TYPE;
+				id->Ident.Location.location = g_strdup(uri);
+			}
+			res = caldav_id_add_object(&id, input, url, opt);
+			break;
+		case ID_DELETE:
+			id = caldav_get_caldav_id();
+			if (etag) {
+				if (! uri) {
+					fprintf(stderr, "Error: Missing URI\n");
+					caldav_free_response(&result);
+					caldav_free_runtime_info(&opt);
+					g_free(url);
+					caldav_free_caldav_id(&id);
+					return 1;
+				}
+				id->Type = CALDAV_ETAG_TYPE;
+				id->Ident.Etag.etag = g_strdup(etag);
+				id->Ident.Etag.uri = g_strdup(uri);
+			}
+			else if (uri) {
+				id->Type = CALDAV_LOCATION_TYPE;
+				id->Ident.Location.location = g_strdup(uri);
+			}
+			else {
+				caldav_free_caldav_id(&id);
+				id = NULL;
+			}
+			if (id)
+				res = caldav_id_delete_object(id, input, url, opt);
+			else
+				res = caldav_delete_object(input, url, opt);
+			break;
+		case ID_MODIFY:
+			id = caldav_get_caldav_id();
+			if (etag) {
+				if (! uri) {
+					fprintf(stderr, "Error: Missing URI\n");
+					caldav_free_response(&result);
+					caldav_free_runtime_info(&opt);
+					g_free(url);
+					caldav_free_caldav_id(&id);
+					return 1;
+				}
+				id->Type = CALDAV_ETAG_TYPE;
+				id->Ident.Etag.etag = g_strdup(etag);
+				id->Ident.Etag.uri = g_strdup(uri);
+			}
+			else if (uri) {
+				id->Type = CALDAV_LOCATION_TYPE;
+				id->Ident.Location.location = g_strdup(uri);
+			}
+			else {
+				caldav_free_caldav_id(&id);
+				id = NULL;
+			}
+			if (id)
+		 		res = caldav_id_modify_object(&id, input, url, opt);
+		 	else
+		 		res = caldav_modify_object(input, url, opt);
+		 	break;
 		case GETCALNAME: res = caldav_get_displayname(result, url, opt); break;
 		case ISCALDAV:
 					res = caldav_enabled_resource(url, opt);
@@ -375,6 +460,18 @@ int main(int argc, char **argv) {
 	}
 	else if (ACTION == GET || ACTION == GETALL || ACTION == GETCALNAME || ACTION == FREEBUSY) {
 		fprintf(stdout, "empty collection\n");
+	}
+	if (id) {
+		if (id->Type == CALDAV_ETAG_TYPE) {
+			fprintf(stdout, "ETAG: %s\n", id->Ident.Etag.etag);
+			fprintf(stdout, "URI:  %s\n", id->Ident.Etag.uri);
+		}
+		else {
+			if (id->Ident.Location.etag)
+				fprintf(stdout, "ETAG: %s\n", id->Ident.Location.etag);
+			fprintf(stdout, "Location: %s\n", id->Ident.Location.location);
+		}
+		caldav_free_caldav_id(&id);
 	}
 	fprintf(stdout, "OK\n");
 	caldav_free_response(&result);

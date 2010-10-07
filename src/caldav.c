@@ -102,8 +102,11 @@ static gboolean make_caldav_call(caldav_settings* settings,
 	switch (settings->ACTION) {
 		case GETALL: result = caldav_getall(settings, info->error); break;
 		case GET: result = caldav_getrange(settings, info->error); break;
+		case ID_ADD:
 		case ADD: result = caldav_add(settings, info->error); break;
+		case ID_DELETE:
 		case DELETE: result = caldav_delete(settings, info->error); break;
+		case ID_MODIFY:
 		case MODIFY: result = caldav_modify(settings, info->error); break;
 		case GETCALNAME: result = caldav_getname(settings, info->error); break;
 		case FREEBUSY: result = caldav_freebusy(settings, info->error); break;
@@ -113,6 +116,7 @@ static gboolean make_caldav_call(caldav_settings* settings,
 }
 
 /**
+ * @deprecated since this function can cause lost updates.
  * Function for adding a new event.
  * @param object Appointment following ICal format (RFC2445). Receiver is
  * responsible for freeing the memory.
@@ -124,6 +128,25 @@ static gboolean make_caldav_call(caldav_settings* settings,
 CALDAV_RESPONSE caldav_add_object(const char* object,
 				  const char* URL,
 				  runtime_info* info) {
+	return caldav_id_add_object(NULL, object, URL, info);
+}
+
+/**
+ * Function for adding an event.
+ * id will contain unique identification for object. Either ETAG or Location.
+ * @param id @see CALDAV_ID
+ * @param object Appointment following ICal format (RFC2445). Receiver is
+ * responsible for freeing the memory.
+ * @param URL Defines CalDAV resource. Receiver is responsible for freeing
+ * the memory. [http://][username[:password]@]host[:port]/url-path.
+ * See (RFC1738).
+ * @param info Pointer to a runtime_info structure. @see runtime_info
+ * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
+ */
+CALDAV_RESPONSE caldav_id_add_object(CALDAV_ID** id,
+					 const char* object,
+				     const char* URL,
+				     runtime_info* info) {
 	caldav_settings settings;
 	CALDAV_RESPONSE caldav_response;
 
@@ -163,6 +186,97 @@ CALDAV_RESPONSE caldav_add_object(const char* object,
 		}
 	}
 	else {
+		if (settings.id && settings.id->Type == CALDAV_LOCATION_TYPE) {
+			gchar* start = get_element_value(settings.file, "DTSTART");
+			if (start) {
+				settings.start = get_time_t(start);
+				g_free(start);
+				//start = get_caldav_datetime(&s);
+				gchar* end = get_element_value(settings.file, "DTEND");
+				if (end) {
+					settings.end = get_time_t(end);
+					g_free(end);
+					//end = get_caldav_datetime(&e);
+					g_free(settings.username);
+					g_free(settings.password);
+					g_free(settings.url);
+					parse_url(&settings, URL);
+					if (caldav_request_etag(&settings, info->error) == OK) {
+						settings.id->Ident.Location.etag = g_strdup(settings.etag);
+					}
+				}
+			}
+		}
+		caldav_response = OK;
+	}
+	if (id) {
+		if (*id)
+			caldav_free_caldav_id(id);
+		*id = caldav_copy_caldav_id(settings.id);
+	}
+	free_caldav_settings(&settings);
+	return caldav_response;
+}
+
+/**
+ * Function for deleting an event.
+ * @param id @see CALDAV_ID
+ * @param object Appointment following ICal format (RFC2445). Receiver is
+ * responsible for freeing the memory.
+ * @param URL Defines CalDAV resource. Receiver is responsible for freeing
+ * the memory. [http://][username[:password]@]host[:port]/url-path.
+ * See (RFC1738).
+ * @param info Pointer to a runtime_info structure. @see runtime_info
+ * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
+ */
+CALDAV_RESPONSE caldav_id_delete_object(CALDAV_ID* id,
+					 const char* object,
+				     const char* URL,
+				     runtime_info* info) {
+	caldav_settings settings;
+	CALDAV_RESPONSE caldav_response;
+
+	g_return_val_if_fail(info != NULL, TRUE);
+
+	init_runtime(info);
+	init_caldav_settings(&settings);
+	settings.file = g_strdup(object);
+	if (id) {
+		settings.ACTION = ID_DELETE;
+		settings.id = caldav_copy_caldav_id(id);
+	}
+	else
+		settings.ACTION = DELETE;
+	if (info->options->debug)
+		settings.debug = TRUE;
+	else
+		settings.debug = FALSE;
+	if (info->options->trace_ascii)
+		settings.trace_ascii = 1;
+	else
+		settings.trace_ascii = 0;
+	if (info->options->use_locking)
+		settings.use_locking = 1;
+	else
+		settings.use_locking = 0;
+	parse_url(&settings, URL);
+	gboolean res = make_caldav_call(&settings, info);
+	if (res) {
+		if (info->error->code > 0) {
+			switch (info->error->code) {
+				case 403: caldav_response = FORBIDDEN; break;
+				case 409: caldav_response = CONFLICT; break;
+				case 423: caldav_response = LOCKED; break;
+				case 501: caldav_response = NOTIMPLEMENTED; break;
+				default: caldav_response = CONFLICT; break;
+			}
+		}
+		else {
+			/* fall-back to conflicting state */
+			caldav_response = CONFLICT;
+		}
+	}
+	else {
 		caldav_response = OK;
 	}
 	free_caldav_settings(&settings);
@@ -170,6 +284,7 @@ CALDAV_RESPONSE caldav_add_object(const char* object,
 }
 
 /**
+ * @deprecated since this function can cause lost updates.
  * Function for deleting an event.
  * @param object Appointment following ICal format (RFC2445). Receiver is
  * responsible for freeing the memory.
@@ -181,52 +296,11 @@ CALDAV_RESPONSE caldav_add_object(const char* object,
 CALDAV_RESPONSE caldav_delete_object(const char* object,
 				     const char* URL,
 				     runtime_info* info) {
-	caldav_settings settings;
-	CALDAV_RESPONSE caldav_response;
-
-	g_return_val_if_fail(info != NULL, TRUE);
-
-	init_runtime(info);
-	init_caldav_settings(&settings);
-	settings.file = g_strdup(object);
-	settings.ACTION = DELETE;
-	if (info->options->debug)
-		settings.debug = TRUE;
-	else
-		settings.debug = FALSE;
-	if (info->options->trace_ascii)
-		settings.trace_ascii = 1;
-	else
-		settings.trace_ascii = 0;
-	if (info->options->use_locking)
-		settings.use_locking = 1;
-	else
-		settings.use_locking = 0;
-	parse_url(&settings, URL);
-	gboolean res = make_caldav_call(&settings, info);
-	if (res) {
-		if (info->error->code > 0) {
-			switch (info->error->code) {
-				case 403: caldav_response = FORBIDDEN; break;
-				case 409: caldav_response = CONFLICT; break;
-				case 423: caldav_response = LOCKED; break;
-				case 501: caldav_response = NOTIMPLEMENTED; break;
-				default: caldav_response = CONFLICT; break;
-			}
-		}
-		else {
-			/* fall-back to conflicting state */
-			caldav_response = CONFLICT;
-		}
-	}
-	else {
-		caldav_response = OK;
-	}
-	free_caldav_settings(&settings);
-	return caldav_response;
+	return caldav_id_delete_object(NULL, object, URL, info);
 }
 
 /**
+ * @deprecated since this function can cause lost updates.
  * Function for modifying an event.
  * @param object Appointment following ICal format (RFC2445). Receiver is
  * responsible for freeing the memory.
@@ -238,6 +312,25 @@ CALDAV_RESPONSE caldav_delete_object(const char* object,
 CALDAV_RESPONSE caldav_modify_object(const char* object,
 				     const char* URL,
 				     runtime_info* info) {
+	return caldav_id_modify_object(NULL, object, URL, info);
+}
+
+/**
+ * Function for modifying an event.
+ * id will contain unique identification for object. Either ETAG or Location.
+ * @param id @see CALDAV_ID
+ * @param object Appointment following ICal format (RFC2445). Receiver is
+ * responsible for freeing the memory.
+ * @param URL Defines CalDAV resource. Receiver is responsible for freeing
+ * the memory. [http://][username[:password]@]host[:port]/url-path.
+ * See (RFC1738).
+ * @param info Pointer to a runtime_info structure. @see runtime_info
+ * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
+ */
+CALDAV_RESPONSE caldav_id_modify_object(CALDAV_ID** id,
+					 const char* object,
+				     const char* URL,
+				     runtime_info* info) {
 	caldav_settings settings;
 	CALDAV_RESPONSE caldav_response;
 
@@ -246,7 +339,15 @@ CALDAV_RESPONSE caldav_modify_object(const char* object,
 	init_runtime(info);
 	init_caldav_settings(&settings);
 	settings.file = g_strdup(object);
-	settings.ACTION = MODIFY;
+	if (id) {
+		settings.ACTION = ID_MODIFY;
+		if (*id) 
+			settings.id = caldav_copy_caldav_id(*id);
+		else
+			settings.id = caldav_get_caldav_id();
+	}
+	else
+		settings.ACTION = MODIFY;
 	if (info->options->debug)
 		settings.debug = TRUE;
 	else
@@ -277,7 +378,33 @@ CALDAV_RESPONSE caldav_modify_object(const char* object,
 		}
 	}
 	else {
+		if (settings.id && settings.id->Type == CALDAV_LOCATION_TYPE) {
+			gchar* start = get_element_value(settings.file, "DTSTART");
+			if (start) {
+				settings.start = get_time_t(start);
+				g_free(start);
+				//start = get_caldav_datetime(&s);
+				gchar* end = get_element_value(settings.file, "DTEND");
+				if (end) {
+					settings.end = get_time_t(end);
+					g_free(end);
+					//end = get_caldav_datetime(&e);
+					g_free(settings.username);
+					g_free(settings.password);
+					g_free(settings.url);
+					parse_url(&settings, URL);
+					if (caldav_request_etag(&settings, info->error) == OK) {
+						settings.id->Ident.Location.etag = g_strdup(settings.etag);
+					}
+				}
+			}
+		}
 		caldav_response = OK;
+	}
+	if (id) {
+		if (*id)
+			caldav_free_caldav_id(id);
+		*id = caldav_copy_caldav_id(settings.id);
 	}
 	free_caldav_settings(&settings);
 	return caldav_response;
@@ -755,4 +882,65 @@ void caldav_free_response(response** resp) {
 		g_free(r);
 		*resp = r = NULL;
 	}
+}
+
+/**
+ * Function returning Object's ETAG
+ * @param xml CalDAV envelope containing a CalDAV object
+ * @return etag The CalDAV object's ETAG
+ */
+gchar* caldav_get_etag(const gchar* xml) {
+	gchar* etag = NULL;
+	
+	if (xml) {
+		gchar* tmp = g_strdup(xml);
+		etag = get_etag(tmp);
+		g_free(tmp);
+	}
+	return etag;
+}
+
+CALDAV_ID* caldav_get_caldav_id() {
+	return g_new0(CALDAV_ID, 1);
+}
+
+void caldav_free_caldav_id(CALDAV_ID** id) {
+	CALDAV_ID* tmp;
+	
+	if (*id) {
+		tmp = *id;
+		if (tmp->Type == CALDAV_ETAG_TYPE) {
+			g_free(tmp->Ident.Etag.uri);
+			g_free(tmp->Ident.Etag.etag);
+		}
+		else {
+			g_free(tmp->Ident.Location.location);
+			g_free(tmp->Ident.Location.etag);
+		}
+		g_free(tmp);
+		*id = tmp = NULL;
+	}
+}
+
+CALDAV_ID* caldav_copy_caldav_id(CALDAV_ID* src) {
+	CALDAV_ID* dst = NULL;
+	
+	if (src) {
+		dst = g_new0(CALDAV_ID, 1);
+		if (src->Type == CALDAV_ETAG_TYPE) {
+			dst->Type = CALDAV_ETAG_TYPE;
+			if (src->Ident.Etag.etag)
+				dst->Ident.Etag.etag = g_strdup(src->Ident.Etag.etag);
+			if (src->Ident.Etag.uri) 
+				dst->Ident.Etag.uri = g_strdup(src->Ident.Etag.uri);
+		}
+		else {
+			dst->Type = CALDAV_LOCATION_TYPE;
+			if (src->Ident.Location.location)
+				dst->Ident.Location.location = g_strdup(src->Ident.Location.location);
+			if (src->Ident.Location.etag)
+				dst->Ident.Location.etag = g_strdup(src->Ident.Location.etag);
+		}
+	}
+	return dst;
 }

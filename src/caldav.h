@@ -43,6 +43,9 @@
 #ifndef __CALDAV_H__
 #define __CALDAV_H__
 
+#include <glib.h>
+G_BEGIN_DECLS
+
 #include <time.h>
 
 /* For debug purposes */
@@ -129,7 +132,10 @@ typedef enum {
 	GETALL,
 	GETCALNAME,
 	ISCALDAV,
-	OPTIONS
+	OPTIONS,
+	ID_DELETE,
+	ID_MODIFY,
+	ID_ADD
 } CALDAV_ACTION;
 
 /**
@@ -148,6 +154,20 @@ typedef enum {
 	NOTIMPLEMENTED
 } CALDAV_RESPONSE;
 
+typedef struct {
+	enum { CALDAV_ETAG_TYPE, CALDAV_LOCATION_TYPE } Type;
+	union {
+		struct {
+			gchar* location;
+			gchar* etag;
+		} Location;
+		struct {
+			gchar* uri;
+			gchar* etag;
+		} Etag;
+	} Ident;
+} CALDAV_ID;
+
 
 #ifndef __CALDAV_USERAGENT
 #define __CALDAV_USERAGENT "libcurl-agent/0.1"
@@ -155,6 +175,7 @@ typedef enum {
 
 
 /**
+ * @deprecated since this function can cause lost updates.
  * Function for adding a new event.
  * @param object Appointment following ICal format (RFC2445). Receiver is
  * responsible for freeing the memory.
@@ -169,6 +190,25 @@ CALDAV_RESPONSE caldav_add_object(const char* object,
 				  runtime_info* info);
 
 /**
+ * Function for adding an event.
+ * id will contain unique identification for object. Either ETAG or Location.
+ * @param id @see CALDAV_ID
+ * @param object Appointment following ICal format (RFC2445). Receiver is
+ * responsible for freeing the memory.
+ * @param URL Defines CalDAV resource. Receiver is responsible for freeing
+ * the memory. [http://][username[:password]@]host[:port]/url-path.
+ * See (RFC1738).
+ * @param info Pointer to a runtime_info structure. @see runtime_info
+ * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
+ */
+CALDAV_RESPONSE caldav_id_add_object(CALDAV_ID** id,
+					 const char* object,
+				     const char* URL,
+				     runtime_info* info);
+
+/**
+ * @deprecated since this function can cause lost updates.
+ * @see caldav_etag_delete_object
  * Function for deleting an event.
  * @param object Appointment following ICal format (RFC2445). Receiver is
  * responsible for freeing the memory.
@@ -183,6 +223,24 @@ CALDAV_RESPONSE caldav_delete_object(const char* object,
 				     runtime_info* info);
 
 /**
+ * Function for deleting an event.
+ * @param id @see CALDAV_ID
+ * @param object Appointment following ICal format (RFC2445). Receiver is
+ * responsible for freeing the memory.
+ * @param URL Defines CalDAV resource. Receiver is responsible for freeing
+ * the memory. [http://][username[:password]@]host[:port]/url-path.
+ * See (RFC1738).
+ * @param info Pointer to a runtime_info structure. @see runtime_info
+ * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
+ */
+CALDAV_RESPONSE caldav_id_delete_object(CALDAV_ID* id,
+					 const char* object,
+				     const char* URL,
+				     runtime_info* info);
+
+/**
+ * @deprecated since this function can cause lost updates.
+ *  @see caldav_etag_modify_object
  * Function for modifying an event.
  * @param object Appointment following ICal format (RFC2445). Receiver is
  * responsible for freeing the memory.
@@ -193,6 +251,23 @@ CALDAV_RESPONSE caldav_delete_object(const char* object,
  * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
  */
 CALDAV_RESPONSE caldav_modify_object(const char* object,
+				     const char* URL,
+				     runtime_info* info);
+
+/**
+ * Function for modifying an event.
+ * id will contain unique identification for object. Either ETAG or Location.
+ * @param id @see CALDAV_ID
+ * @param object Appointment following ICal format (RFC2445). Receiver is
+ * responsible for freeing the memory.
+ * @param URL Defines CalDAV resource. Receiver is responsible for freeing
+ * the memory. [http://][username[:password]@]host[:port]/url-path.
+ * See (RFC1738).
+ * @param info Pointer to a runtime_info structure. @see runtime_info
+ * @return Ok, FORBIDDEN, or CONFLICT. @see CALDAV_RESPONSE
+ */
+CALDAV_RESPONSE caldav_id_modify_object(CALDAV_ID** id,
+					 const char* object,
 				     const char* URL,
 				     runtime_info* info);
 
@@ -339,5 +414,20 @@ response* caldav_get_response();
  * _response
  */
 void caldav_free_response(response** info);
+
+/**
+ * Function returning Object's ETAG
+ * @param xml CalDAV envelope containing a CalDAV object
+ * @return etag The CalDAV object's ETAG
+ */
+gchar* caldav_get_etag(const gchar* xml);
+
+CALDAV_ID* caldav_get_caldav_id();
+
+void caldav_free_caldav_id(CALDAV_ID** id);
+
+CALDAV_ID* caldav_copy_caldav_id(CALDAV_ID* src);
+
+G_END_DECLS
 
 #endif
